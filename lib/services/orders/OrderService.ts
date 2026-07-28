@@ -174,6 +174,7 @@ export class OrderService {
     } catch (err) {
       console.error("[order] sendReceiptEmail failed:", err);
     }
+  }
 
   async issueDownloadToken(orderItemId: string) {
     const token = uuid();
