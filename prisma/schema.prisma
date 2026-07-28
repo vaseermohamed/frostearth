@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DomainType {
+  FREE       // frostearth.in/c/slug
+  SUBDOMAIN  // slug.frostearth.in
+  CUSTOM     // creator's own domain
+}
+
+enum UserRole {
+  CREATOR
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+// A Store is a tenant. Everything else hangs off storeId.
+// MVP has exactly one row here, but every query is written as if it didn't.
+model Store {
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique
+  domainType   DomainType @default(FREE)
+  customDomain String?    @unique
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  users    User[]
+  products Product[]
+  orders   Order[]
+
+  @@map("stores")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(CREATOR)
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([storeId])
+  @@map("users")
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id])
+  title         String
+  description   String
+  priceInPaise  Int
+  coverImageKey String?
+  fileKey       String
+  fileName      String
+  status        ProductStatus @default(DRAFT)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([storeId])
+  @@index([storeId, status])
+  @@map("products")
+}
+
+// One row per checkout — the "sale" record. Can cover one or many
+// products (cart checkout), always the complete, authoritative history
+// of every purchase attempt (PENDING included, not just successful ones).
+model Order {
+  id                String      @id @default(cuid())
+  storeId           String
+  store             Store       @relation(fields: [storeId], references: [id])
+  buyerEmail        String
+  buyerPhone        String?
+  amountInPaise     Int         // total across all items, snapshotted at checkout
+  status            OrderStatus @default(PENDING)
+  razorpayOrderId   String      @unique
+  razorpayPaymentId String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@index([storeId])
+  @@index([buyerEmail])
+  @@map("orders")
+}
+
+// One row per product within an order (the cart's line items). Title
+// and price are snapshotted at purchase time so a later price change or
+// product edit never rewrites sales history.
+model OrderItem {
+  id                  String   @id @default(cuid())
+  orderId             String
+  order               Order    @relation(fields: [orderId], references: [id])
+  productId           String
+  product             Product  @relation(fields: [productId], references: [id])
+  titleSnapshot       String
+  priceInPaiseSnapshot Int
+  createdAt           DateTime @default(now())
+
+  downloadTokens DownloadToken[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// Short-lived, single-purpose tokens for secure PDF download — one per
+// purchased item, so each product in a cart gets its own scoped link.
+// Never expose fileKey or a static URL directly to the client.
+model DownloadToken {
+  id          String    @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  token       String    @unique
+  expiresAt   DateTime
+  usedCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([orderItemId])
+  @@map("download_tokens")
+}
