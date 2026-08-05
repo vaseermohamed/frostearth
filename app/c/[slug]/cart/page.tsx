@@ -75,44 +75,52 @@ export default function CartPage() {
           Your cart is empty. <Link href="/" className="text-ink underline">Browse products</Link>
         </p>
       ) : (
-        <div className="grid gap-8 sm:grid-cols-[1fr_300px]">
-          <div className="bg-white rounded-sm border border-fog divide-y divide-fog">
-            {items.map((item) => (
-              <div key={item.productId} className="flex items-center justify-between gap-3 px-4 py-4">
-                <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-fog">
-                  {item.coverImageKey ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`/api/storage/${item.coverImageKey}`}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <NotebookPlaceholder className="w-full h-full" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink truncate">{item.title}</p>
-                  <p className="text-sm font-mono text-slate">
-                    ₹{(item.priceInPaise / 100).toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeItem(item.productId)}
-                  className="text-sm text-red-600 hover:text-red-800 shrink-0"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
+        <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          {/* "Your details" — left on desktop, second on mobile (buyer sees what they're buying first) */}
+          <div className="bg-white rounded-2xl border border-fog p-6 order-2 lg:order-1">
+            <h2 className="font-display font-extrabold text-lg text-ink mb-4">Your details</h2>
+            <CartCheckout onSuccess={setCompleted} onFailure={setFailed} />
           </div>
 
-          <div className="bg-white rounded-2xl border border-fog p-5 h-fit">
-            <div className="flex items-center justify-between text-sm font-medium mb-4">
-              <span className="text-ink">Total</span>
-              <span className="font-mono text-ink">₹{(totalInPaise / 100).toLocaleString("en-IN")}</span>
+          {/* "Order summary" — right sidebar on desktop, first/top on mobile */}
+          <div className="bg-white rounded-2xl border border-fog p-6 h-fit order-1 lg:order-2">
+            <h2 className="font-display font-extrabold text-lg text-ink mb-4">Order summary</h2>
+            <div className="divide-y divide-fog border-t border-fog">
+              {items.map((item) => (
+                <div key={item.productId} className="flex items-start gap-3 py-4 min-w-0">
+                  <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-fog">
+                    {item.coverImageKey ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/api/storage/${item.coverImageKey}`}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <NotebookPlaceholder className="w-full h-full" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink leading-snug break-words">{item.title}</p>
+                    <p className="text-sm font-mono text-slate mt-1">
+                      ₹{(item.priceInPaise / 100).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(item.productId)}
+                    className="text-xs text-red-600 hover:text-red-800 shrink-0 mt-0.5"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
-            <CartCheckout onSuccess={setCompleted} onFailure={setFailed} />
+            <div className="flex items-center justify-between border-t border-fog pt-4 mt-4">
+              <span className="font-medium text-ink">Total</span>
+              <span className="font-mono font-bold text-ink text-lg">
+                ₹{(totalInPaise / 100).toLocaleString("en-IN")}
+              </span>
+            </div>
           </div>
         </div>
       )}

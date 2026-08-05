@@ -87,7 +87,7 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
                     )}
                   </div>
                   <div className="p-5">
-                    <p className="font-display font-bold text-lg text-ink mb-1.5 leading-snug">{p.title}</p>
+                    <p className="font-display font-bold text-lg text-ink mb-1.5 leading-snug break-words">{p.title}</p>
                     <p className="font-mono text-sm text-frost">₹{(p.priceInPaise / 100).toLocaleString("en-IN")}</p>
                   </div>
                 </Link>
