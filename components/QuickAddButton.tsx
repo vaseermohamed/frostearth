@@ -32,7 +32,7 @@ export default function QuickAddButton({
       }}
       disabled={inCart}
       aria-label={inCart ? `${title} is in your cart` : `Add ${title} to cart`}
-      className="absolute top-3 right-3 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-ink text-paper hover:bg-ink/85 transition-colors disabled:opacity-70 disabled:hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-frost focus-visible:ring-offset-2"
+      className="absolute top-3 right-3 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-ink text-paper border-2 border-white shadow-md hover:bg-ink/85 transition-colors disabled:opacity-70 disabled:hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-frost focus-visible:ring-offset-2"
     >
       {inCart ? (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
