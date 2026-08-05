@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthService } from "@/lib/services/auth/AuthService";
 import { getOrderService } from "@/lib/services/orders/OrderService";
-import { parseOrderFilters, toIst } from "@/lib/services/orders/orderFilters";
+import { parseOrderFilters, toIst, formatOrderNumber } from "@/lib/services/orders/orderFilters";
 
 const CSV_HEADERS = [
   "Order Number",
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   const orders = await getOrderService().listForStore(session.storeId, filters);
 
   const rows = orders.map((o) => [
-    o.orderNumber,
+    formatOrderNumber(o.orderNumber),
     formatDateDDMMYYYY(o.createdAt),
     o.buyerName,
     o.buyerEmail,

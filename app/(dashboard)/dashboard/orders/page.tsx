@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { getProductService } from "@/lib/services/products/ProductService";
-import { parseOrderFilters, formatIstDateTime } from "@/lib/services/orders/orderFilters";
+import { parseOrderFilters, formatIstDateTime, formatOrderNumber } from "@/lib/services/orders/orderFilters";
 
 interface OrdersPageProps {
   searchParams: {
@@ -116,7 +116,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               {/* Order # + date/time (left) — status + amount (right) */}
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 break-words">
-                  <p className="font-mono text-sm font-medium text-ink">#{o.orderNumber}</p>
+                  <p className="font-mono text-sm font-medium text-ink">#{formatOrderNumber(o.orderNumber)}</p>
                   <p className="text-xs text-slate mt-0.5">{formatIstDateTime(o.createdAt)}</p>
                 </div>
                 <div className="text-right shrink-0">

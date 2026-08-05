@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart/CartContext";
 import CartCheckout, { CompletedOrder, FailedOrder } from "@/components/CartCheckout";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
+import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
 
 export default function CartPage() {
   const { items, removeItem, totalInPaise } = useCart();
@@ -21,7 +22,7 @@ export default function CartPage() {
       <div className="max-w-lg mx-auto px-4 py-12 sm:py-16">
         <div className="bg-white rounded-2xl border border-green-200 p-6">
           <p className="font-display font-extrabold text-lg text-green-700 mb-1">Payment successful</p>
-          <p className="text-sm font-mono text-slate mb-4">Order #{completed.orderNumber}</p>
+          <p className="text-sm font-mono text-slate mb-4">Order #{formatOrderNumber(completed.orderNumber)}</p>
           <div className="space-y-2 mb-4">
             {completed.downloads.map((d) => (
               <a

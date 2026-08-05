@@ -151,7 +151,7 @@ export class OrderService {
         const dt = await this.issueDownloadToken(item.id);
         tokens.push({ title: item.titleSnapshot, token: dt.token });
       }
-      await this.sendReceiptEmail(updated.buyerEmail, updated.orderNumber, tokens);
+      await this.sendReceiptEmail(updated.buyerEmail, updated.buyerName, updated.orderNumber, updated.createdAt, tokens);
     }
 
     return updated;
@@ -165,22 +165,18 @@ export class OrderService {
    */
   private async sendReceiptEmail(
     to: string,
-    orderNumber: string,
+    buyerName: string,
+    orderNumber: number,
+    orderDate: Date,
     tokens: { title: string; token: string }[]
   ) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-    const linksHtml = tokens
-      .map(
-        (t) =>
-          `<li><a href="${appUrl}/api/download/${t.token}">${escapeHtml(t.title)}</a></li>`
-      )
-      .join("");
+    const formattedOrderNumber = formatOrderNumber(orderNumber);
 
     try {
       await this.email.send({
         to,
-        subject: `Order #${orderNumber} — your FrostEarth download links`,
-        html: `<p>Thanks for your purchase! Order <strong>#${orderNumber}</strong>. Here ${tokens.length > 1 ? "are your files" : "is your file"}:</p><ul>${linksHtml}</ul><p>These links expire in 3 days.</p>`,
+        subject: `Order ${formattedOrderNumber} — your FrostEarth download links`,
+        html: buildReceiptEmailHtml({ buyerName, orderNumber, orderDate, tokens }),
       });
     } catch (err) {
       console.error("[order] sendReceiptEmail failed:", err);
@@ -267,4 +263,80 @@ export function getOrderService() {
 
 function escapeHtml(str: string): string {
   return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
+/**
+ * Table-based layout with everything inlined — email clients don't load
+ * external/Tailwind CSS, and many (Outlook especially) only reliably
+ * respect layout expressed as nested <table>s rather than flex/grid divs.
+ * Archivo won't load in email either, so the header falls back to a bold
+ * web-safe sans-serif to approximate the same feel. buyerName and item
+ * titles are buyer/creator-supplied strings landing in raw HTML, so both
+ * go through escapeHtml — the same protection already applied to titles
+ * before this rewrite, just now also covering the buyer's name.
+ */
+function buildReceiptEmailHtml(params: {
+  buyerName: string;
+  orderNumber: number;
+  orderDate: Date;
+  tokens: { title: string; token: string }[];
+}): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+  const year = new Date().getFullYear();
+  const formattedOrderNumber = formatOrderNumber(params.orderNumber);
+  const formattedDate = formatIstDateTime(params.orderDate);
+
+  const itemRows = params.tokens
+    .map(
+      (t) => `
+              <tr>
+                <td style="padding:0 0 10px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; color:#0A0A0A;">
+                  ${escapeHtml(t.title)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 0 20px 0;">
+                  <a href="${appUrl}/api/download/${t.token}" style="display:inline-block; background-color:#2E5C8A; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-decoration:none; padding:10px 22px; border-radius:24px;">Download</a>
+                </td>
+              </tr>`
+    )
+    .join("");
+
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAFAF8; padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border:1px solid #E8E8E4;">
+        <tr>
+          <td style="padding:32px 32px 20px 32px;">
+            <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-weight:700; font-size:22px; letter-spacing:-0.5px; color:#0A0A0A;">FrostEarth</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 24px 32px; border-bottom:1px solid #E8E8E4;">
+            <p style="margin:0 0 6px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#0A0A0A;">Hi ${escapeHtml(params.buyerName)}, thanks for your order.</p>
+            <p style="margin:0; font-family:'Courier New', Courier, monospace; font-size:13px; color:#6B6B68;">Order ${formattedOrderNumber} &middot; ${formattedDate}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 32px 32px;">
+            <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">These links expire in 3 days and can be used up to 10 times.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px 32px 32px; border-top:1px solid #E8E8E4;">
+            <p style="margin:0 0 4px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">Questions? Contact us at <a href="mailto:hello@frostearth.in" style="color:#6B6B68;">hello@frostearth.in</a></p>
+            <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">&copy; ${year} FrostEarth</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
 }
