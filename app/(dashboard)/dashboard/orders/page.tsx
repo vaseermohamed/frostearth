@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { getProductService } from "@/lib/services/products/ProductService";
-import { parseOrderFilters } from "@/lib/services/orders/orderFilters";
+import { parseOrderFilters, formatIstDateTime } from "@/lib/services/orders/orderFilters";
 
 interface OrdersPageProps {
   searchParams: {
@@ -113,31 +113,50 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         <div className="bg-white rounded-2xl border border-fog divide-y divide-fog">
           {orders.map((o) => (
             <div key={o.id} className="px-5 py-4">
-              <div className="flex items-start justify-between mb-2 gap-4">
+              {/* Order # + date/time (left) — status + amount (right) */}
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 break-words">
-                  <p className="font-medium text-ink">
-                    <span className="font-mono">#{o.orderNumber}</span> — {o.buyerName}
-                  </p>
-                  <p className="text-xs text-slate">{o.buyerEmail}</p>
-                  {o.buyerPhone && <p className="text-xs text-slate">{o.buyerPhone}</p>}
-                  {o.razorpayPaymentId && (
-                    <p className="text-xs text-slate font-mono mt-1">Ref: {o.razorpayPaymentId}</p>
-                  )}
+                  <p className="font-mono text-sm font-medium text-ink">#{o.orderNumber}</p>
+                  <p className="text-xs text-slate mt-0.5">{formatIstDateTime(o.createdAt)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-mono font-medium text-ink">
+                  <StatusBadge status={o.status} />
+                  <p className="font-mono text-lg font-bold text-ink mt-1.5">
                     ₹{(o.amountInPaise / 100).toLocaleString("en-IN")}
                   </p>
-                  <StatusBadge status={o.status} />
                 </div>
               </div>
-              <ul className="text-sm text-slate pl-4 list-disc break-words">
+
+              {/* Buyer — name is the primary line, email/phone read as one quieter contact-info unit */}
+              <div className="mt-3 min-w-0 break-words">
+                <p className="font-medium text-ink">{o.buyerName}</p>
+                <p className="text-xs text-slate mt-0.5">
+                  {o.buyerEmail}
+                  {o.buyerPhone ? ` · ${o.buyerPhone}` : ""}
+                </p>
+              </div>
+
+              {/* Payment reference — reconciliation detail, not glance-worthy, so it's collapsed */}
+              {o.razorpayPaymentId && (
+                <details className="mt-2">
+                  <summary className="text-xs text-slate hover:text-ink transition-colors cursor-pointer select-none">
+                    Payment reference
+                  </summary>
+                  <p className="text-xs text-slate font-mono break-words mt-1">{o.razorpayPaymentId}</p>
+                </details>
+              )}
+
+              {/* Items */}
+              <div className="mt-3 pt-3 border-t border-fog space-y-1.5">
                 {o.items.map((item) => (
-                  <li key={item.id}>
-                    {item.titleSnapshot} — ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}
-                  </li>
+                  <div key={item.id} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="text-slate break-words">{item.titleSnapshot}</span>
+                    <span className="font-mono text-slate shrink-0">
+                      ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}
+                    </span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </div>

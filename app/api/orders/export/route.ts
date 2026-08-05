@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthService } from "@/lib/services/auth/AuthService";
 import { getOrderService } from "@/lib/services/orders/OrderService";
-import { parseOrderFilters } from "@/lib/services/orders/orderFilters";
+import { parseOrderFilters, toIst } from "@/lib/services/orders/orderFilters";
 
 const CSV_HEADERS = [
   "Order Number",
@@ -14,8 +14,6 @@ const CSV_HEADERS = [
   "Status",
   "Payment Reference",
 ];
-
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
 /**
  * Same filters as the orders dashboard page (see orderFilters.ts) applied
@@ -72,7 +70,7 @@ function displayStatus(status: string): "PAID" | "FAILED" {
 
 /** DD-MM-YYYY in IST — createdAt is stored in UTC, and a late-night IST sale must land on the right calendar day. */
 function formatDateDDMMYYYY(date: Date): string {
-  const ist = new Date(date.getTime() + IST_OFFSET_MS);
+  const ist = toIst(date);
   const dd = String(ist.getUTCDate()).padStart(2, "0");
   const mm = String(ist.getUTCMonth() + 1).padStart(2, "0");
   const yyyy = ist.getUTCFullYear();

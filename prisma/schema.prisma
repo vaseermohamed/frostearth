@@ -61,7 +61,7 @@ model Order {
   buyerEmail        String
   buyerPhone        String?
   buyerName         String
-  orderNumber       String      @unique
+  orderNumber       Int         @unique @default(autoincrement())
   amountInPaise     Int
   status            OrderStatus @default(PENDING)
   razorpayOrderId   String      @unique
