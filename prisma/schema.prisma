@@ -60,6 +60,8 @@ model Order {
   storeId           String
   buyerEmail        String
   buyerPhone        String?
+  buyerName         String
+  orderNumber       String      @unique
   amountInPaise     Int
   status            OrderStatus @default(PENDING)
   razorpayOrderId   String      @unique

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getPaymentService } from "@/lib/services/payment";
 import { getEmailService } from "@/lib/services/email";
 import { v4 as uuid } from "uuid";
+import { randomUUID } from "crypto";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 const DOWNLOAD_TOKEN_MAX_USES = 10;
@@ -52,12 +53,15 @@ export class OrderService {
       receipt: uuid(), // Razorpay caps `receipt` at 40 chars — a bare uuid (36) fits
     });
 
+    const orderNumber = `FE-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+
     const order = await prisma.order.create({
       data: {
         storeId,
         buyerName,
         buyerEmail,
         buyerPhone,
+        orderNumber,
         amountInPaise,
         status: "PENDING",
         razorpayOrderId: providerOrder.providerOrderId,
@@ -164,7 +168,7 @@ export class OrderService {
    */
   private async sendReceiptEmail(
     to: string,
-    orderNumber: number,
+    orderNumber: string,
     tokens: { title: string; token: string }[]
   ) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
