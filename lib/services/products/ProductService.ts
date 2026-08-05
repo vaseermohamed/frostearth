@@ -18,6 +18,21 @@ export class ProductService {
     });
   }
 
+  /** The main dashboard product list — everything except archived (DRAFT + PUBLISHED). */
+  async listActiveForStore(storeId: string) {
+    return prisma.product.findMany({
+      where: { storeId, status: { in: ["DRAFT", "PUBLISHED"] } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async listArchivedForStore(storeId: string) {
+    return prisma.product.findMany({
+      where: { storeId, status: "ARCHIVED" },
+      orderBy: { updatedAt: "desc" },
+    });
+  }
+
   /** Public storefront listing — resolves the store by its slug (the /c/[slug] free tier). */
   async listPublishedByStoreSlug(slug: string) {
     const store = await prisma.store.findUnique({ where: { slug } });
@@ -113,15 +128,17 @@ export class ProductService {
    * A product with sales history CANNOT be hard-deleted — OrderItem rows
    * reference it, and removing it would orphan real sales records (the
    * database itself enforces this via a foreign key). Instead, it's
-   * archived: unpublished from the storefront but kept in the database
-   * so past orders remain fully intact and auditable.
+   * archived: pulled off the storefront and out of the main dashboard
+   * list, but kept in the database so past orders remain fully intact
+   * and auditable. A creator can restore it (back to DRAFT) later from
+   * the archive page.
    */
   async delete(storeId: string, productId: string): Promise<{ hardDeleted: boolean }> {
     const product = await this.getOwned(storeId, productId);
 
     const orderCount = await prisma.orderItem.count({ where: { productId } });
     if (orderCount > 0) {
-      await prisma.product.update({ where: { id: productId }, data: { status: "DRAFT" } });
+      await prisma.product.update({ where: { id: productId }, data: { status: "ARCHIVED" } });
       return { hardDeleted: false };
     }
 

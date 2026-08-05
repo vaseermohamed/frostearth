@@ -5,20 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        frost: {
-          50: "#f2f7fb",
-          100: "#e3edf6",
-          500: "#1f5c8b",
-          600: "#184a70",
-          900: "#0d2a40",
-        },
-        clay: {
-          500: "#c76b3f",
-        },
+        ink: "#0A0A0A",
+        paper: "#FAFAF8",
+        frost: "#2E5C8A",
+        fog: "#E8E8E4",
+        slate: "#6B6B68",
       },
       fontFamily: {
-        display: ["Georgia", "serif"],
-        body: ["ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-archivo)", "sans-serif"],
+        body: ["var(--font-inter)", "sans-serif"],
+        mono: ["var(--font-plex-mono)", "monospace"],
       },
     },
   },

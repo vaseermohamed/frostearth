@@ -15,7 +15,7 @@ export default function DeleteProductButton({
 
   async function handleDelete() {
     const confirmed = window.confirm(
-      `Delete "${productTitle}"? If it has never sold, this removes it and its file permanently. If it has past orders, it will be unpublished instead (kept for your records).`
+      `Delete "${productTitle}"? If it has never sold, this removes it and its file permanently. If it has past orders, it will be archived instead (kept for your records).`
     );
     if (!confirmed) return;
 
@@ -26,7 +26,7 @@ export default function DeleteProductButton({
 
     if (res.ok) {
       if (data.hardDeleted === false) {
-        alert(`"${productTitle}" has past orders, so it can't be permanently deleted — it's been unpublished from your storefront instead.`);
+        alert(`"${productTitle}" has past orders, so it can't be permanently deleted — it's been archived instead. You'll find it under Archive.`);
       }
       router.refresh();
     } else {

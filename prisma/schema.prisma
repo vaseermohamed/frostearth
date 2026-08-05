@@ -119,6 +119,7 @@ enum UserRole {
 enum ProductStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 enum OrderStatus {

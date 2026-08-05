@@ -80,26 +80,26 @@ export default function EditProductPage() {
     }
   }
 
-  if (notFound) return <p className="text-frost-500">Product not found.</p>;
-  if (!product) return <p className="text-frost-500">Loading…</p>;
+  if (notFound) return <p className="text-slate">Product not found.</p>;
+  if (!product) return <p className="text-slate">Loading…</p>;
 
   const loading = stage !== "idle";
   const buttonLabel = stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Save changes";
 
   return (
     <div className="max-w-lg">
-      <Link href="/dashboard/products" className="inline-flex items-center gap-1 text-sm text-frost-500 hover:text-frost-900 mb-4">
+      <Link href="/dashboard/products" className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4">
         ← Back to products
       </Link>
       <h1 className="text-2xl font-semibold mb-6">Edit product</h1>
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-frost-100 p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-fog p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
           <input
             name="title"
             required
             defaultValue={product.title}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
         </div>
         <div>
@@ -109,7 +109,7 @@ export default function EditProductPage() {
             required
             rows={4}
             defaultValue={product.description}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
         </div>
         <div>
@@ -121,7 +121,7 @@ export default function EditProductPage() {
             step="1"
             required
             defaultValue={product.priceInPaise / 100}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
         </div>
         <div>
@@ -129,7 +129,7 @@ export default function EditProductPage() {
           <select
             name="status"
             defaultValue={product.status}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           >
             <option value="PUBLISHED">Published</option>
             <option value="DRAFT">Draft (hidden from storefront)</option>
@@ -137,13 +137,13 @@ export default function EditProductPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">
-            Replace PDF <span className="text-frost-500 font-normal">(current: {product.fileName} — leave blank to keep it)</span>
+            Replace PDF <span className="text-slate font-normal">(current: {product.fileName} — leave blank to keep it)</span>
           </label>
           <input name="file" type="file" accept="application/pdf" className="w-full text-sm" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">
-            Replace cover image <span className="text-frost-500 font-normal">(leave blank to keep current)</span>
+            Replace cover image <span className="text-slate font-normal">(leave blank to keep current)</span>
           </label>
           <input name="cover" type="file" accept="image/*" className="w-full text-sm" />
         </div>
@@ -154,7 +154,7 @@ export default function EditProductPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-frost-500 hover:bg-frost-600 text-white font-medium rounded-md px-4 py-2 disabled:opacity-60"
+            className="rounded-full bg-frost hover:opacity-90 transition-opacity text-white font-medium px-4 py-2 disabled:opacity-60"
           >
             {buttonLabel}
           </button>

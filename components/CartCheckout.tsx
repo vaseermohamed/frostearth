@@ -148,14 +148,14 @@ export default function CartCheckout({
         placeholder="Full name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="w-full rounded-md border border-frost-100 px-2 py-1.5 text-sm"
+        className="w-full rounded-full border border-fog px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-frost"
       />
       <input
         type="email"
-        placeholder="you@example.com"
+        placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-md border border-frost-100 px-2 py-1.5 text-sm"
+        className="w-full rounded-full border border-fog px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-frost"
       />
       <input
         type="tel"
@@ -164,13 +164,13 @@ export default function CartCheckout({
         placeholder="10-digit mobile number"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        className="w-full rounded-md border border-frost-100 px-2 py-1.5 text-sm"
+        className="w-full rounded-full border border-fog px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-frost"
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <button
         onClick={handlePay}
         disabled={status === "processing" || items.length === 0}
-        className="w-full bg-clay-500 hover:opacity-90 text-white text-sm font-medium rounded-md px-3 py-2 disabled:opacity-60"
+        className="w-full rounded-full bg-frost hover:opacity-90 transition-opacity text-white text-sm font-medium px-3 py-2.5 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
         {status === "processing" ? "Processing…" : `Pay ₹${(totalInPaise / 100).toLocaleString("en-IN")}`}
       </button>

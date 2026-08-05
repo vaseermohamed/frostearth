@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductService } from "@/lib/services/products/ProductService";
 import AddToCartButton from "@/components/AddToCartButton";
+import NotebookPlaceholder from "@/components/NotebookPlaceholder";
 
 export default async function ProductPage({
   params,
@@ -17,22 +18,30 @@ export default async function ProductPage({
   const priceLabel = `₹${(product.priceInPaise / 100).toLocaleString("en-IN")}`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      <Link href={`/c/${store.slug}`} className="inline-flex items-center gap-1 text-sm text-frost-500 hover:text-frost-900 mb-6">
+    <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
+      <Link
+        href={`/c/${store.slug}`}
+        className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-8"
+      >
         ← Back to all products
       </Link>
 
-      {product.coverImageKey && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/api/storage/${product.coverImageKey}`}
-          alt=""
-          className="w-full max-h-80 object-cover rounded-lg mb-6"
-        />
-      )}
-      <h1 className="font-display text-3xl text-frost-900 mb-2">{product.title}</h1>
-      <p className="text-frost-500 whitespace-pre-wrap mb-6">{product.description}</p>
-      <p className="text-2xl font-semibold text-frost-900 mb-6">{priceLabel}</p>
+      <div className="rounded-sm overflow-hidden border border-fog mb-8">
+        {product.coverImageKey ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/storage/${product.coverImageKey}`}
+            alt=""
+            className="w-full max-h-96 object-cover"
+          />
+        ) : (
+          <NotebookPlaceholder className="w-full h-72" />
+        )}
+      </div>
+
+      <h1 className="font-display font-black text-3xl sm:text-4xl text-ink mb-3 leading-tight">{product.title}</h1>
+      <p className="text-slate whitespace-pre-wrap leading-relaxed mb-8 max-w-xl">{product.description}</p>
+      <p className="font-mono text-2xl text-frost mb-8">{priceLabel}</p>
       <AddToCartButton
         productId={product.id}
         title={product.title}

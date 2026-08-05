@@ -210,9 +210,35 @@ export class OrderService {
     });
   }
 
-  async listForStore(storeId: string) {
+  /**
+   * `filters` is optional so every existing call site (dashboard overview
+   * stats, which wants every order) keeps working unchanged. `status:
+   * "FAILED"` matches both FAILED and PENDING orders — the dashboard's
+   * on-screen badge already collapses PENDING into "Failed" for display
+   * (see StatusBadge in the orders page), so the filter has to match what
+   * a creator actually sees, not the raw underlying status.
+   */
+  async listForStore(
+    storeId: string,
+    filters: { fromDate?: Date; toDate?: Date; status?: "PAID" | "FAILED"; productId?: string } = {}
+  ) {
+    const { fromDate, toDate, status, productId } = filters;
+
     return prisma.order.findMany({
-      where: { storeId },
+      where: {
+        storeId,
+        ...(fromDate || toDate
+          ? {
+              createdAt: {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {}),
+              },
+            }
+          : {}),
+        ...(status === "PAID" ? { status: "PAID" as const } : {}),
+        ...(status === "FAILED" ? { status: { in: ["FAILED", "PENDING"] as const } } : {}),
+        ...(productId ? { items: { some: { productId } } } : {}),
+      },
       include: { items: true },
       orderBy: { createdAt: "desc" },
     });

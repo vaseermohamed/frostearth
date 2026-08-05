@@ -11,14 +11,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-frost-100 bg-white">
+      <header className="border-b border-fog bg-white">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <span className="font-display text-lg text-frost-900">FrostEarth</span>
+          <span className="font-display font-black text-lg text-ink">FrostEarth</span>
           <nav className="flex items-center gap-6 text-sm">
-            <Link href="/dashboard" className="text-frost-600 hover:text-frost-900">Overview</Link>
-            <Link href="/dashboard/products" className="text-frost-600 hover:text-frost-900">Products</Link>
-            <Link href="/dashboard/orders" className="text-frost-600 hover:text-frost-900">Orders</Link>
-            <Link href="/dashboard/settings" className="text-frost-600 hover:text-frost-900">Settings</Link>
+            <Link href="/dashboard" className="text-slate hover:text-ink transition-colors">Overview</Link>
+            <Link href="/dashboard/products" className="text-slate hover:text-ink transition-colors">Products</Link>
+            <Link href="/dashboard/products/archive" className="text-slate hover:text-ink transition-colors">Archive</Link>
+            <Link href="/dashboard/orders" className="text-slate hover:text-ink transition-colors">Orders</Link>
+            <Link href="/dashboard/settings" className="text-slate hover:text-ink transition-colors">Settings</Link>
             <LogoutButton />
           </nav>
         </div>

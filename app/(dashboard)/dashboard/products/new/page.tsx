@@ -67,14 +67,14 @@ export default function NewProductPage() {
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-semibold mb-6">Upload a product</h1>
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-frost-100 p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-fog p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
-          <input name="title" required className="w-full rounded-md border border-frost-100 px-3 py-2" />
+          <input name="title" required className="w-full rounded-md border border-fog px-3 py-2" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea name="description" required rows={4} className="w-full rounded-md border border-frost-100 px-3 py-2" />
+          <textarea name="description" required rows={4} className="w-full rounded-md border border-fog px-3 py-2" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Price (₹)</label>
@@ -84,7 +84,7 @@ export default function NewProductPage() {
             min={1}
             step="1"
             required
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
             onChange={(e) => {
               const hidden = e.currentTarget.form?.elements.namedItem("priceInPaise") as HTMLInputElement;
               if (hidden) hidden.value = String(Math.round(Number(e.currentTarget.value) * 100));
@@ -106,7 +106,7 @@ export default function NewProductPage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-frost-500 hover:bg-frost-600 text-white font-medium rounded-md px-4 py-2 disabled:opacity-60"
+          className="rounded-full bg-frost hover:opacity-90 transition-opacity text-white font-medium px-4 py-2 disabled:opacity-60"
         >
           {buttonLabel}
         </button>

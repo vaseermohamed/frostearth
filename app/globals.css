@@ -3,9 +3,13 @@
 @tailwind utilities;
 
 body {
-  @apply bg-frost-50 text-frost-900 font-body;
+  @apply bg-paper text-ink font-body;
 }
 
 h1, h2, h3 {
-  @apply font-display;
+  @apply font-display font-extrabold;
+}
+
+h1, h2 {
+  @apply tracking-tight;
 }

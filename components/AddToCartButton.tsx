@@ -1,6 +1,6 @@
 "use client";
 
-import { useCart } from "@/lib/cart/CartContext";
+import { useAddToCart } from "@/lib/cart/useAddToCart";
 
 export default function AddToCartButton({
   productId,
@@ -13,14 +13,13 @@ export default function AddToCartButton({
   priceInPaise: number;
   coverImageKey: string | null;
 }) {
-  const { items, addItem } = useCart();
-  const inCart = items.some((i) => i.productId === productId);
+  const { inCart, add } = useAddToCart({ productId, title, priceInPaise, coverImageKey });
 
   return (
     <button
-      onClick={() => addItem({ productId, title, priceInPaise, coverImageKey })}
+      onClick={add}
       disabled={inCart}
-      className="bg-clay-500 hover:opacity-90 text-white font-medium rounded-md px-5 py-2.5 disabled:opacity-60"
+      className="rounded-full bg-frost hover:opacity-90 transition-opacity text-white font-medium px-6 py-3 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
     >
       {inCart ? "In cart" : "Add to cart"}
     </button>

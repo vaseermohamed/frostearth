@@ -39,7 +39,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-md">
       <h1 className="text-2xl font-semibold mb-6">Account settings</h1>
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-frost-100 p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-fog p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Current password</label>
           <input
@@ -47,9 +47,9 @@ export default function SettingsPage() {
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
-          <p className="text-xs text-frost-500 mt-1">Required to confirm any change below.</p>
+          <p className="text-xs text-slate mt-1">Required to confirm any change below.</p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">New email (optional)</label>
@@ -58,7 +58,7 @@ export default function SettingsPage() {
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="Leave blank to keep your current email"
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
         </div>
         <div>
@@ -69,7 +69,7 @@ export default function SettingsPage() {
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Leave blank to keep your current password"
             minLength={6}
-            className="w-full rounded-md border border-frost-100 px-3 py-2"
+            className="w-full rounded-md border border-fog px-3 py-2"
           />
         </div>
 
@@ -79,7 +79,7 @@ export default function SettingsPage() {
         <button
           type="submit"
           disabled={status === "saving"}
-          className="bg-frost-500 hover:bg-frost-600 text-white font-medium rounded-md px-4 py-2 disabled:opacity-60"
+          className="rounded-full bg-frost hover:opacity-90 text-white font-medium px-4 py-2 transition-opacity disabled:opacity-60"
         >
           {status === "saving" ? "Saving…" : "Save changes"}
         </button>

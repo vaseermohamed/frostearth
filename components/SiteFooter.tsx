@@ -8,12 +8,12 @@ import Link from "next/link";
 export default function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-frost-100 bg-white mt-16">
-      <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-frost-500">
-        <p>© {year} FrostEarth. All rights reserved.</p>
-        <div className="flex items-center gap-5">
-          <a href="mailto:hello@frostearth.in" className="hover:text-frost-900">Contact us</a>
-          <Link href="/login" className="hover:text-frost-900">Creator login</Link>
+    <footer className="border-t border-fog bg-paper mt-20">
+      <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate">
+        <p className="font-mono text-xs">© {year} FrostEarth. All rights reserved.</p>
+        <div className="flex items-center gap-6">
+          <a href="mailto:hello@frostearth.in" className="hover:text-ink transition-colors">Contact us</a>
+          <Link href="/login" className="hover:text-ink transition-colors">Creator login</Link>
         </div>
       </div>
     </footer>

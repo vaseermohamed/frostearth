@@ -28,9 +28,9 @@ export default async function DashboardOverviewPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white rounded-lg border border-frost-100 p-5">
-      <p className="text-sm text-frost-500">{label}</p>
-      <p className="text-2xl font-semibold text-frost-900 mt-1">{value}</p>
+    <div className="bg-white rounded-2xl border border-fog p-5">
+      <p className="text-sm text-slate">{label}</p>
+      <p className="font-mono text-2xl text-ink mt-1">{value}</p>
     </div>
   );
 }
