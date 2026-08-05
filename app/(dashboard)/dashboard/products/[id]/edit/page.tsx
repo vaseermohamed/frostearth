@@ -137,7 +137,7 @@ export default function EditProductPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">
-            Replace PDF <span className="text-slate font-normal">(current: {product.fileName} — leave blank to keep it)</span>
+            Replace PDF <span className="text-slate font-normal break-words">(current: {product.fileName} — leave blank to keep it)</span>
           </label>
           <input name="file" type="file" accept="application/pdf" className="w-full text-sm" />
         </div>

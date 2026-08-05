@@ -114,7 +114,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           {orders.map((o) => (
             <div key={o.id} className="px-5 py-4">
               <div className="flex items-start justify-between mb-2 gap-4">
-                <div className="min-w-0">
+                <div className="min-w-0 break-words">
                   <p className="font-medium text-ink">
                     <span className="font-mono">#{o.orderNumber}</span> — {o.buyerName}
                   </p>
@@ -131,7 +131,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   <StatusBadge status={o.status} />
                 </div>
               </div>
-              <ul className="text-sm text-slate pl-4 list-disc">
+              <ul className="text-sm text-slate pl-4 list-disc break-words">
                 {o.items.map((item) => (
                   <li key={item.id}>
                     {item.titleSnapshot} — ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}

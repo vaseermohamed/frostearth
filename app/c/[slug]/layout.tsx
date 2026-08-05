@@ -20,7 +20,10 @@ export default async function StorefrontLayout({
       <div className="min-h-screen flex flex-col">
         <header className="border-b border-fog bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/80 sticky top-0 z-40">
           <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
-            <Link href={`/c/${store.slug}`} className="font-display font-black text-xl tracking-tight text-ink">
+            <Link
+              href={`/c/${store.slug}`}
+              className="font-display font-black text-xl tracking-tight text-ink min-w-0 truncate"
+            >
               {store.name}
             </Link>
             <CartWidget storeSlug={store.slug} />

@@ -17,7 +17,7 @@ export default async function DashboardOverviewPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-6">Overview</h1>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Stat label="Products" value={products.length} />
         <Stat label="Paid orders" value={paidOrders.length} />
         <Stat label="Revenue" value={`₹${(revenueInPaise / 100).toLocaleString("en-IN")}`} />

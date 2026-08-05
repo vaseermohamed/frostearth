@@ -39,8 +39,8 @@ export default async function ProductPage({
         )}
       </div>
 
-      <h1 className="font-display font-black text-3xl sm:text-4xl text-ink mb-3 leading-tight">{product.title}</h1>
-      <p className="text-slate whitespace-pre-wrap leading-relaxed mb-8 max-w-xl">{product.description}</p>
+      <h1 className="font-display font-black text-3xl sm:text-4xl text-ink mb-3 leading-tight break-words">{product.title}</h1>
+      <p className="text-slate whitespace-pre-wrap break-words leading-relaxed mb-8 max-w-xl">{product.description}</p>
       <p className="font-mono text-2xl text-frost mb-8">{priceLabel}</p>
       <AddToCartButton
         productId={product.id}

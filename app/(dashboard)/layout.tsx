@@ -12,9 +12,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen">
       <header className="border-b border-fog bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-y-2">
           <span className="font-display font-black text-lg text-ink">FrostEarth</span>
-          <nav className="flex items-center gap-6 text-sm">
+          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
             <Link href="/dashboard" className="text-slate hover:text-ink transition-colors">Overview</Link>
             <Link href="/dashboard/products" className="text-slate hover:text-ink transition-colors">Products</Link>
             <Link href="/dashboard/products/archive" className="text-slate hover:text-ink transition-colors">Archive</Link>
