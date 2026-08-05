@@ -19,8 +19,13 @@ export interface StorageService {
    * Local implementation proxies through an API route since raw disk
    * paths aren't web-accessible; S3/R2 implementations would return a
    * real pre-signed URL. Callers never need to know the difference.
+   * `filename`, when given, makes the R2 implementation serve the object
+   * as `Content-Disposition: attachment; filename="..."` under that name
+   * (and force `Content-Type: application/pdf`) so redirecting straight
+   * to the signed URL still downloads exactly like the old buffered
+   * response did.
    */
-  getSignedUrl(key: string, expiresInSeconds: number): Promise<string>;
+  getSignedUrl(key: string, expiresInSeconds: number, filename?: string): Promise<string>;
 
   /**
    * A URL the browser can PUT a file to directly, so the bytes never pass

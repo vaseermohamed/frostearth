@@ -49,8 +49,17 @@ export class R2StorageService implements StorageService {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
-  async getSignedUrl(key: string, expiresInSeconds: number): Promise<string> {
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+  async getSignedUrl(key: string, expiresInSeconds: number, filename?: string): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ...(filename
+        ? {
+            ResponseContentDisposition: `attachment; filename="${filename}"`,
+            ResponseContentType: "application/pdf",
+          }
+        : {}),
+    });
     return getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
   }
 
