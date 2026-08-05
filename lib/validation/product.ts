@@ -14,3 +14,10 @@ export const updateProductSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
 });
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+
+/** Validates the {fileKey, fileName} pair a product/cover upload resolves to once already in storage. */
+export const productFileKeySchema = z.object({
+  fileKey: z.string().min(1),
+  fileName: z.string().min(1),
+});
+export type ProductFileKeyInput = z.infer<typeof productFileKeySchema>;

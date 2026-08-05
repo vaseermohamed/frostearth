@@ -53,6 +53,11 @@ export class R2StorageService implements StorageService {
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     return getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
   }
+
+  async getUploadUrl(key: string, contentType: string, expiresInSeconds: number): Promise<string> {
+    const command = new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType });
+    return getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+  }
 }
 
 function requireEnv(name: string): string {

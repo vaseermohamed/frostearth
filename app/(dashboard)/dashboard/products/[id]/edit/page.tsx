@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { uploadDirect } from "@/lib/uploads/uploadDirect";
 
 interface Product {
   id: string;
@@ -13,12 +14,14 @@ interface Product {
   fileName: string;
 }
 
+type Stage = "idle" | "uploading" | "saving";
+
 export default function EditProductPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState<Stage>("idle");
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -31,28 +34,57 @@ export default function EditProductPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
-    // priceInPaise is derived from the rupee input, same pattern as the create form
+    const title = form.get("title");
+    const description = form.get("description");
     const rupees = form.get("priceRupees");
-    if (rupees) form.set("priceInPaise", String(Math.round(Number(rupees) * 100)));
-    form.delete("priceRupees");
+    const priceInPaise = rupees ? Math.round(Number(rupees) * 100) : undefined;
+    const status = form.get("status");
+    const fileInput = form.get("file");
+    const coverInput = form.get("cover");
 
-    const res = await fetch(`/api/products/${params.id}`, { method: "PATCH", body: form });
-    setLoading(false);
+    try {
+      setStage("uploading");
+      const uploadedFile =
+        fileInput instanceof File && fileInput.size > 0 ? await uploadDirect(fileInput, "file") : undefined;
+      const uploadedCover =
+        coverInput instanceof File && coverInput.size > 0 ? await uploadDirect(coverInput, "cover") : undefined;
 
-    if (res.ok) {
-      router.push("/dashboard/products");
-      router.refresh();
-    } else {
+      setStage("saving");
+      const res = await fetch(`/api/products/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          priceInPaise,
+          status,
+          fileKey: uploadedFile?.key,
+          fileName: uploadedFile?.fileName,
+          coverImageKey: uploadedCover?.key,
+        }),
+      });
+
+      if (res.ok) {
+        router.push("/dashboard/products");
+        router.refresh();
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       setError(typeof data.error === "string" ? data.error : "Could not save changes");
+    } catch (err: any) {
+      setError(err.message || "Could not save changes");
+    } finally {
+      setStage("idle");
     }
   }
 
   if (notFound) return <p className="text-frost-500">Product not found.</p>;
   if (!product) return <p className="text-frost-500">Loading…</p>;
+
+  const loading = stage !== "idle";
+  const buttonLabel = stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Save changes";
 
   return (
     <div className="max-w-lg">
@@ -124,7 +156,7 @@ export default function EditProductPage() {
             disabled={loading}
             className="bg-frost-500 hover:bg-frost-600 text-white font-medium rounded-md px-4 py-2 disabled:opacity-60"
           >
-            {loading ? "Saving…" : "Save changes"}
+            {buttonLabel}
           </button>
         </div>
       </form>

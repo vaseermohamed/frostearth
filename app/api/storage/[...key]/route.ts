@@ -23,3 +23,25 @@ export async function GET(_req: NextRequest, { params }: { params: { key: string
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 }
+
+/**
+ * Local-dev-only counterpart to R2's presigned PUT URL. Only reachable when
+ * STORAGE_DRIVER=local — production uploads go straight to R2 and never hit
+ * this server. Keys are opaque, server-generated UUIDs minted by the
+ * authenticated /api/products/upload-url route, so knowledge of this URL is
+ * the same authorization boundary a real presigned URL provides.
+ */
+export async function PUT(req: NextRequest, { params }: { params: { key: string[] } }) {
+  if ((process.env.STORAGE_DRIVER || "local") !== "local") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const key = params.key.join("/");
+  if (!key.startsWith("products/") && !key.startsWith("covers/")) {
+    return NextResponse.json({ error: "Invalid key" }, { status: 400 });
+  }
+
+  const buffer = Buffer.from(await req.arrayBuffer());
+  await getStorageService().save(key, buffer);
+  return NextResponse.json({ ok: true });
+}

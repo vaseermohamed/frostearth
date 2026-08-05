@@ -21,4 +21,12 @@ export interface StorageService {
    * real pre-signed URL. Callers never need to know the difference.
    */
   getSignedUrl(key: string, expiresInSeconds: number): Promise<string>;
+
+  /**
+   * A URL the browser can PUT a file to directly, so the bytes never pass
+   * through our server (needed to dodge Vercel's 4.5MB function body cap).
+   * Local implementation proxies through an API route; R2 returns a real
+   * presigned PUT URL. Callers never need to know the difference.
+   */
+  getUploadUrl(key: string, contentType: string, expiresInSeconds: number): Promise<string>;
 }

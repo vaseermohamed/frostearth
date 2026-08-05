@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthService } from "@/lib/services/auth/AuthService";
 import { getProductService } from "@/lib/services/products/ProductService";
-import { updateProductSchema } from "@/lib/validation/product";
+import { updateProductSchema, productFileKeySchema } from "@/lib/validation/product";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getAuthService().requireSession().catch(() => null);
@@ -15,35 +15,42 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
+/**
+ * Replacement file/cover, when present, are already sitting in storage —
+ * the browser uploaded them directly via a presigned URL from
+ * /api/products/upload-url before calling this route. Only small JSON
+ * metadata plus the resulting storage keys land here, never raw bytes.
+ */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getAuthService().requireSession().catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  const form = await req.formData();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+
   const parsed = updateProductSchema.safeParse({
-    title: form.get("title") || undefined,
-    description: form.get("description") || undefined,
-    priceInPaise: form.get("priceInPaise") || undefined,
-    status: form.get("status") || undefined,
+    title: body.title || undefined,
+    description: body.description || undefined,
+    priceInPaise: body.priceInPaise || undefined,
+    status: body.status || undefined,
   });
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const fileEntry = form.get("file");
-  let filePayload: { buffer: Buffer; fileName: string } | undefined;
-  if (fileEntry instanceof File && fileEntry.size > 0) {
-    if (fileEntry.type !== "application/pdf") {
-      return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
+  let filePayload: { key: string; fileName: string } | undefined;
+  if (body.fileKey || body.fileName) {
+    const fileParsed = productFileKeySchema.safeParse({ fileKey: body.fileKey, fileName: body.fileName });
+    if (!fileParsed.success) {
+      return NextResponse.json({ error: "Invalid replacement file" }, { status: 400 });
     }
-    filePayload = { buffer: Buffer.from(await fileEntry.arrayBuffer()), fileName: fileEntry.name };
+    filePayload = { key: fileParsed.data.fileKey, fileName: fileParsed.data.fileName };
   }
 
-  const coverEntry = form.get("cover");
-  let coverPayload: { buffer: Buffer; fileName: string } | undefined;
-  if (coverEntry instanceof File && coverEntry.size > 0) {
-    coverPayload = { buffer: Buffer.from(await coverEntry.arrayBuffer()), fileName: coverEntry.name };
-  }
+  const coverPayload =
+    typeof body.coverImageKey === "string" && body.coverImageKey.length > 0
+      ? { key: body.coverImageKey }
+      : undefined;
 
   try {
     const product = await getProductService().update(

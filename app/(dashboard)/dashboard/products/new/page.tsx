@@ -2,29 +2,67 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { uploadDirect } from "@/lib/uploads/uploadDirect";
+
+type Stage = "idle" | "uploading" | "saving";
 
 export default function NewProductPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState<Stage>("idle");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
-    const res = await fetch("/api/products", { method: "POST", body: form });
-    setLoading(false);
+    const title = form.get("title");
+    const description = form.get("description");
+    const priceInPaise = form.get("priceInPaise");
+    const fileInput = form.get("file");
+    const coverInput = form.get("cover");
 
-    if (res.ok) {
-      router.push("/dashboard/products");
-      router.refresh();
-    } else {
+    if (!(fileInput instanceof File) || fileInput.size === 0) {
+      setError("Product file (PDF) is required");
+      return;
+    }
+
+    try {
+      setStage("uploading");
+      const uploadedFile = await uploadDirect(fileInput, "file");
+      const uploadedCover =
+        coverInput instanceof File && coverInput.size > 0 ? await uploadDirect(coverInput, "cover") : undefined;
+
+      setStage("saving");
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          priceInPaise: Number(priceInPaise),
+          fileKey: uploadedFile.key,
+          fileName: uploadedFile.fileName,
+          coverImageKey: uploadedCover?.key,
+        }),
+      });
+
+      if (res.ok) {
+        router.push("/dashboard/products");
+        router.refresh();
+        return;
+      }
       const data = await res.json().catch(() => ({}));
-      setError(typeof data.error === "string" ? data.error : "Could not upload product");
+      setError(typeof data.error === "string" ? data.error : "Could not save product");
+    } catch (err: any) {
+      setError(err.message || "Could not upload product");
+    } finally {
+      setStage("idle");
     }
   }
+
+  const loading = stage !== "idle";
+  const buttonLabel = stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Publish product";
 
   return (
     <div className="max-w-lg">
@@ -70,7 +108,7 @@ export default function NewProductPage() {
           disabled={loading}
           className="bg-frost-500 hover:bg-frost-600 text-white font-medium rounded-md px-4 py-2 disabled:opacity-60"
         >
-          {loading ? "Uploading…" : "Publish product"}
+          {buttonLabel}
         </button>
       </form>
     </div>

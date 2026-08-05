@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getStorageService } from "@/lib/services/storage";
 import { CreateProductInput, UpdateProductInput } from "@/lib/validation/product";
-import { v4 as uuid } from "uuid";
 
 /**
  * All methods take storeId explicitly — even though the MVP only ever
@@ -42,30 +41,27 @@ export class ProductService {
     return product;
   }
 
+  /**
+   * File and cover are already sitting in storage by the time this runs —
+   * the browser PUTs them directly (see /api/products/upload-url), so this
+   * only ever writes the DB row. Keys are minted by that presign route, not
+   * here, since it's the only place that gets to decide storage layout.
+   */
   async create(
     storeId: string,
     input: CreateProductInput,
-    file: { buffer: Buffer; fileName: string },
-    cover?: { buffer: Buffer; fileName: string }
+    file: { key: string; fileName: string },
+    cover?: { key: string }
   ) {
-    const fileKey = `products/${storeId}/${uuid()}-${sanitize(file.fileName)}`;
-    await this.storage.save(fileKey, file.buffer);
-
-    let coverImageKey: string | undefined;
-    if (cover) {
-      coverImageKey = `covers/${storeId}/${uuid()}-${sanitize(cover.fileName)}`;
-      await this.storage.save(coverImageKey, cover.buffer);
-    }
-
     return prisma.product.create({
       data: {
         storeId,
         title: input.title,
         description: input.description,
         priceInPaise: input.priceInPaise,
-        fileKey,
+        fileKey: file.key,
         fileName: file.fileName,
-        coverImageKey,
+        coverImageKey: cover?.key,
         status: "PUBLISHED",
       },
     });
@@ -75,32 +71,41 @@ export class ProductService {
     storeId: string,
     productId: string,
     input: UpdateProductInput,
-    file?: { buffer: Buffer; fileName: string },
-    cover?: { buffer: Buffer; fileName: string }
+    file?: { key: string; fileName: string },
+    cover?: { key: string }
   ) {
     const existing = await this.getOwned(storeId, productId); // throws if not owned by this store
 
     const data: Record<string, unknown> = { ...input };
-
     if (file) {
-      const fileKey = `products/${storeId}/${uuid()}-${sanitize(file.fileName)}`;
-      await this.storage.save(fileKey, file.buffer);
-      await this.storage.delete(existing.fileKey); // clean up the old PDF after the new one is safely saved
-      data.fileKey = fileKey;
+      data.fileKey = file.key;
       data.fileName = file.fileName;
     }
-
     if (cover) {
-      const coverImageKey = `covers/${storeId}/${uuid()}-${sanitize(cover.fileName)}`;
-      await this.storage.save(coverImageKey, cover.buffer);
-      if (existing.coverImageKey) await this.storage.delete(existing.coverImageKey);
-      data.coverImageKey = coverImageKey;
+      data.coverImageKey = cover.key;
     }
 
-    return prisma.product.update({
-      where: { id: productId },
-      data,
-    });
+    const updated = await prisma.product.update({ where: { id: productId }, data });
+
+    // Clean up replaced files only after the DB row points at the new keys,
+    // and best-effort like delete() below — a storage hiccup here must never
+    // block the metadata update the creator actually asked for.
+    if (file) {
+      try {
+        await this.storage.delete(existing.fileKey);
+      } catch (err) {
+        console.error(`[product] failed to delete replaced fileKey ${existing.fileKey}:`, err);
+      }
+    }
+    if (cover && existing.coverImageKey) {
+      try {
+        await this.storage.delete(existing.coverImageKey);
+      } catch (err) {
+        console.error(`[product] failed to delete replaced coverImageKey ${existing.coverImageKey}:`, err);
+      }
+    }
+
+    return updated;
   }
 
   /**
@@ -142,7 +147,8 @@ export class ProductService {
   }
 }
 
-function sanitize(name: string) {
+/** Shared with /api/products/upload-url, which is now the only place that mints storage keys. */
+export function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 

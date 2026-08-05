@@ -44,4 +44,14 @@ export class LocalFsStorageService implements StorageService {
     // branches on which storage driver is active.
     return `/api/storage/${encodeURIComponent(key)}`;
   }
+
+  async getUploadUrl(key: string): Promise<string> {
+    // Local disk has no native presigned PUT either — proxy through the
+    // same /api/storage route (see its PUT handler) so local dev exercises
+    // the identical browser-PUTs-directly-to-a-URL code path as R2 does.
+    // The key is minted server-side by the authenticated presign route, so
+    // knowledge of this URL is the same authorization boundary a real
+    // presigned URL provides.
+    return `/api/storage/${key}`;
+  }
 }
