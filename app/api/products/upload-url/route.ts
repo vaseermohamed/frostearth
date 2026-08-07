@@ -28,6 +28,12 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // fileName lands directly in a storage key (see sanitizeFileName below) —
+  // S3/R2 keys are capped at 1024 bytes, and no real filename needs to be
+  // anywhere close to this.
+  if (fileName.length > 200) {
+    return NextResponse.json({ error: "File name is too long" }, { status: 400 });
+  }
   if (kind === "file" && contentType !== "application/pdf") {
     return NextResponse.json({ error: "Only PDF files are supported for the product file" }, { status: 400 });
   }

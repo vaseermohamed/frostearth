@@ -42,6 +42,14 @@ export async function PUT(req: NextRequest, { params }: { params: { key: string[
   }
 
   const buffer = Buffer.from(await req.arrayBuffer());
-  await getStorageService().save(key, buffer);
-  return NextResponse.json({ ok: true });
+  try {
+    await getStorageService().save(key, buffer);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    // Covers LocalFsStorageService's path-traversal guard throwing on a
+    // crafted key, plus any other disk-write failure — must not surface
+    // as a raw 500.
+    console.error("[storage] save failed:", err);
+    return NextResponse.json({ error: "Invalid key" }, { status: 400 });
+  }
 }

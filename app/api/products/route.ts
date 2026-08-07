@@ -44,12 +44,16 @@ export async function POST(req: NextRequest) {
       ? { key: body.coverImageKey }
       : undefined;
 
-  const product = await getProductService().create(
-    session.storeId,
-    parsed.data,
-    { key: fileParsed.data.fileKey, fileName: fileParsed.data.fileName },
-    coverPayload
-  );
-
-  return NextResponse.json({ product }, { status: 201 });
+  try {
+    const product = await getProductService().create(
+      session.storeId,
+      parsed.data,
+      { key: fileParsed.data.fileKey, fileName: fileParsed.data.fileName },
+      coverPayload
+    );
+    return NextResponse.json({ product }, { status: 201 });
+  } catch (err: any) {
+    console.error("[products] create failed:", err);
+    return NextResponse.json({ error: "Could not save product" }, { status: 400 });
+  }
 }

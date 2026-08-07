@@ -23,11 +23,18 @@ const subjectCodeSchema = z
     return trimmed ? trimmed : null;
   });
 
+// priceInPaise is a real Postgres Int (int4) column — an unbounded value
+// here would crash the create/update query with a raw DB range error
+// instead of a validation message (the same class of bug as the order
+// number search). ₹1,00,000 is a generous ceiling for exam-prep notes and
+// sits far below int4 max (~₹2.14 crore); adjust if that's ever too low.
+const MAX_PRICE_IN_PAISE = 10_000_000; // ₹1,00,000
+
 export const createProductSchema = z.object({
   title: z.string().min(3).max(200),
   subjectCode: subjectCodeSchema,
   description: z.string().min(1).max(5000),
-  priceInPaise: z.coerce.number().int().min(100), // min ₹1
+  priceInPaise: z.coerce.number().int().min(100).max(MAX_PRICE_IN_PAISE), // min ₹1
 });
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 
@@ -35,7 +42,7 @@ export const updateProductSchema = z.object({
   title: z.string().min(3).max(200).optional(),
   subjectCode: subjectCodeSchema,
   description: z.string().min(1).max(5000).optional(),
-  priceInPaise: z.coerce.number().int().min(100).optional(),
+  priceInPaise: z.coerce.number().int().min(100).max(MAX_PRICE_IN_PAISE).optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
 });
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

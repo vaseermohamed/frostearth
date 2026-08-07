@@ -37,7 +37,13 @@ export async function GET(req: NextRequest) {
   // listForStore (not listForStorePaginated) — every matching row, always,
   // regardless of what page the creator currently has open on the Orders
   // page. Pagination must never change what an export contains.
-  const orders = await getOrderService().listForStore(session.storeId, filters);
+  let orders;
+  try {
+    orders = await getOrderService().listForStore(session.storeId, filters);
+  } catch (err) {
+    console.error("[orders export] query failed:", err);
+    return NextResponse.json({ error: "Could not generate export for these filters" }, { status: 400 });
+  }
 
   const rows = orders.map((o) => [
     formatOrderNumber(o.orderNumber),

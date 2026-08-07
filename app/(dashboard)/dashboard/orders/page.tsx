@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { getProductService } from "@/lib/services/products/ProductService";
@@ -88,6 +89,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     const p = new URLSearchParams(filterParams);
     p.set("page", String(targetPage));
     return `/dashboard/orders?${p.toString()}`;
+  }
+
+  // A hand-edited/stale ?page= beyond the last real page (e.g. filters
+  // narrowed the result set, or someone typed ?page=999999) would
+  // otherwise render a confusing empty table under a "Page 999999 of 33"
+  // header. Self-heal onto the last valid page instead of showing that.
+  if (page > totalPages && total > 0) {
+    redirect(pageHref(totalPages));
   }
 
   return (

@@ -28,6 +28,9 @@ export interface ParsedOrderFilters {
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
+/** Defensive cap on search input — no legitimate order number/email/phone/name/payment-ref approaches this length; stops a pasted essay from being sent into a DB ILIKE scan. */
+const SEARCH_QUERY_MAX_LENGTH = 200;
+
 export const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
@@ -39,7 +42,7 @@ export const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug
  * shifted by the 5:30 IST offset.
  */
 export function parseOrderFilters(params: OrderFilterParams): ParsedOrderFilters {
-  const query = params.searchQuery?.trim();
+  const query = params.searchQuery?.trim().slice(0, SEARCH_QUERY_MAX_LENGTH);
   const isValidType = ORDER_SEARCH_TYPES.some((t) => t.value === params.searchType);
 
   return {

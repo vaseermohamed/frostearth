@@ -7,6 +7,8 @@ import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchTyp
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 const DOWNLOAD_TOKEN_MAX_USES = 50;
+/** Postgres int4 max — the ceiling for any value bound for an Int column (orderNumber here). */
+const POSTGRES_INT4_MAX = 2147483647;
 
 interface OrderListFilters {
   fromDate?: Date;
@@ -493,10 +495,15 @@ function buildSearchWhere(search?: { type: OrderSearchType; query: string }): Pr
       // and exact ID lookup is the normal expectation anyway (a creator
       // pastes/types the number off a receipt, e.g. "47" or "FE-000047").
       // Non-digit input (or none) must match nothing, not silently fall
-      // through to "no filter" and return every order.
+      // through to "no filter" and return every order. Also must never
+      // pass a value outside Postgres's int4 range (-2147483648..2147483647)
+      // to Prisma — an out-of-range Int crashes the query with a raw DB
+      // error instead of just matching nothing (confirmed bug: a 10-digit
+      // mobile number pasted into this same field exceeds int4 max).
       const digitsOnly = search.query.replace(/\D/g, "");
       const parsed = digitsOnly ? parseInt(digitsOnly, 10) : NaN;
-      return { orderNumber: Number.isNaN(parsed) ? -1 : parsed };
+      const inRange = !Number.isNaN(parsed) && parsed >= 0 && parsed <= POSTGRES_INT4_MAX;
+      return { orderNumber: inRange ? parsed : -1 };
     }
     case "email":
       return { buyerEmail: { contains: search.query, mode: "insensitive" as const } };
