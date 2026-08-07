@@ -1,0 +1,10 @@
+[build.environment]
+  # R2_BUCKET_NAME isn't actually sensitive — unlike R2_SECRET_ACCESS_KEY, a
+  # bucket name alone grants no access. Netlify's secrets scanner flags it
+  # as a false positive because its value happens to be/contain "frostearth",
+  # a word that legitimately appears throughout the codebase (branding,
+  # cookie names, cache keys) for unrelated, non-secret reasons. Every other
+  # real secret (R2_SECRET_ACCESS_KEY, RAZORPAY_KEY_SECRET, SESSION_SECRET,
+  # DATABASE_URL, etc.) is intentionally left OUT of this list — the scanner
+  # should keep checking for those.
+  SECRETS_SCAN_OMIT_KEYS = "R2_BUCKET_NAME"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart/CartContext";
 
 declare global {
@@ -9,31 +10,25 @@ declare global {
   }
 }
 
-export interface CompletedOrder {
-  orderNumber: number;
-  downloads: { title: string; token: string }[];
-}
-
 export interface FailedOrder {
   reason: string;
 }
 
 /**
- * The name/email/phone form + Razorpay flow. Success and failure are
- * reported to the PARENT via callbacks rather than held in local state
- * here — this component's own state gets thrown away the moment the
- * cart clears (which happens right after a successful payment), so
- * anything that needs to survive that (the receipt, the failure
- * message) has to live one level up. See CartPage.
+ * The name/email/phone form + Razorpay flow. Failure stays local state
+ * (reported to the parent, see CartPage) — nothing time-sensitive is lost
+ * if that view disappears on refresh. Success is different: it redirects
+ * to a persistent order page instead, since a refresh previously wiped
+ * the buyer's only on-screen copy of their download links.
  */
 export default function CartCheckout({
-  onSuccess,
   onFailure,
 }: {
-  onSuccess: (order: CompletedOrder) => void;
   onFailure: (failure: FailedOrder) => void;
 }) {
   const { items, totalInPaise, clear } = useCart();
+  const router = useRouter();
+  const { slug } = useParams<{ slug: string }>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -118,7 +113,10 @@ export default function CartCheckout({
         setStatus("idle");
         if (verifyRes.ok && verified.status === "PAID" && verified.downloads?.length) {
           clear();
-          onSuccess({ orderNumber: verified.orderNumber, downloads: verified.downloads });
+          // created.orderId is already our internal Order.id from the
+          // /api/checkout response above — no need to fetch anything else,
+          // the order confirmation page loads its own data server-side.
+          router.push(`/c/${slug}/order/${created.orderId}`);
         } else {
           onFailure({
             reason: "Payment could not be verified. If you were charged, contact support with your email and order details.",

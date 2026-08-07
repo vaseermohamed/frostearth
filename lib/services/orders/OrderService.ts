@@ -212,6 +212,39 @@ export class OrderService {
   }
 
   /**
+   * A single order, scoped to a store — the buyer-facing order
+   * confirmation page's only access check (the orderId itself, plus
+   * belonging to this store, same trust model download tokens already
+   * use; there's no buyer login to check against).
+   */
+  async getForStore(storeId: string, orderId: string) {
+    return prisma.order.findFirst({
+      where: { id: orderId, storeId },
+      include: { items: true },
+    });
+  }
+
+  /**
+   * Reuses whatever download token already exists per item (minted once,
+   * at payment-confirmation time in markPaidByRazorpayOrderId) instead of
+   * minting a new one on every visit to the confirmation page — a page
+   * refresh must not hand out additional redemptions on top of the
+   * existing MAX_USES cap. Only mints a token if an item somehow has none.
+   */
+  async getOrIssueDownloadTokens(order: { id: string; items: { id: string; titleSnapshot: string }[] }) {
+    const existing = await this.getDownloadTokensForOrder(order.id);
+    const existingByItemId = new Map(existing.map((t) => [t.orderItemId, t]));
+
+    const results: { title: string; token: string }[] = [];
+    for (const item of order.items) {
+      const found = existingByItemId.get(item.id);
+      const token = found ?? (await this.issueDownloadToken(item.id));
+      results.push({ title: item.titleSnapshot, token: token.token });
+    }
+    return results;
+  }
+
+  /**
    * `filters` is optional so every existing call site (dashboard overview
    * stats, which wants every order) keeps working unchanged. `status:
    * "FAILED"` matches both FAILED and PENDING orders — the dashboard's
