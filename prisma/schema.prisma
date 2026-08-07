@@ -39,6 +39,7 @@ model Product {
   id            String        @id @default(cuid())
   storeId       String
   title         String
+  subjectCode   String?
   description   String
   priceInPaise  Int
   coverImageKey String?

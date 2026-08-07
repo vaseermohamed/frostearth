@@ -72,6 +72,7 @@ export class ProductService {
       data: {
         storeId,
         title: input.title,
+        subjectCode: input.subjectCode,
         description: input.description,
         priceInPaise: input.priceInPaise,
         fileKey: file.key,

@@ -8,6 +8,7 @@ import { uploadDirect } from "@/lib/uploads/uploadDirect";
 interface Product {
   id: string;
   title: string;
+  subjectCode: string | null;
   description: string;
   priceInPaise: number;
   status: "DRAFT" | "PUBLISHED";
@@ -37,6 +38,7 @@ export default function EditProductPage() {
 
     const form = new FormData(e.currentTarget);
     const title = form.get("title");
+    const subjectCode = form.get("subjectCode");
     const description = form.get("description");
     const rupees = form.get("priceRupees");
     const priceInPaise = rupees ? Math.round(Number(rupees) * 100) : undefined;
@@ -57,6 +59,12 @@ export default function EditProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          // Always sent, even blank — unlike the create form, blank here
+          // is a deliberate "clear the code" action the server needs to
+          // see as present-but-empty, not as "not part of this request"
+          // (see the PATCH route / subjectCodeSchema for why that
+          // distinction matters).
+          subjectCode: subjectCode ?? "",
           description,
           priceInPaise,
           status,
@@ -101,6 +109,18 @@ export default function EditProductPage() {
             defaultValue={product.title}
             className="w-full rounded-md border border-fog px-3 py-2"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Subject code</label>
+          <input
+            name="subjectCode"
+            maxLength={12}
+            defaultValue={product.subjectCode || ""}
+            className="w-full rounded-md border border-fog px-3 py-2"
+          />
+          <p className="text-xs text-slate mt-1">
+            Short internal code shown in the orders table (e.g. IP-TA-S). Leave blank to use the title.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>

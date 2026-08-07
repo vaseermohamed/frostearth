@@ -33,6 +33,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     description: body.description || undefined,
     priceInPaise: body.priceInPaise || undefined,
     status: body.status || undefined,
+    // Only included when the caller's own body actually has this key —
+    // partial updates that don't mention subjectCode at all (e.g.
+    // RestoreProductButton's {status: "DRAFT"}) must not silently wipe
+    // an existing code. See the schema's transform for the full logic.
+    ...("subjectCode" in body ? { subjectCode: body.subjectCode } : {}),
   });
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

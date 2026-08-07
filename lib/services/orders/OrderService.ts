@@ -6,7 +6,7 @@ import { v4 as uuid } from "uuid";
 import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
-const DOWNLOAD_TOKEN_MAX_USES = 10;
+const DOWNLOAD_TOKEN_MAX_USES = 50;
 
 interface OrderListFilters {
   fromDate?: Date;
@@ -288,7 +288,13 @@ export class OrderService {
     const [orders, total] = await prisma.$transaction([
       prisma.order.findMany({
         where,
-        include: { items: true },
+        // The dense table's Item column shows the CURRENT product's
+        // subjectCode (not a snapshot — it's a lightweight admin label a
+        // creator can add/edit on a product after orders already exist,
+        // unlike titleSnapshot which is deliberately frozen at sale time).
+        // Only that one scalar is pulled per item's product, not the
+        // whole row.
+        include: { items: { include: { product: { select: { subjectCode: true } } } } },
         orderBy: { createdAt: "desc" },
         skip,
         take: pagination.pageSize,

@@ -4,10 +4,33 @@ import { getOrderService } from "@/lib/services/orders/OrderService";
 import { getProductService } from "@/lib/services/products/ProductService";
 import {
   parseOrderFilters,
-  formatIstDateTime,
+  formatCompactIstDateTime,
   formatOrderNumber,
   ORDER_SEARCH_TYPES,
 } from "@/lib/services/orders/orderFilters";
+
+// Same 7-column template used by the header row and every data row —
+// defined once so the two can never drift out of alignment.
+const GRID_COLS = "grid grid-cols-[100px_110px_1fr_110px_150px_100px_70px] gap-3 items-center";
+const FAILED_RED = "#B91C1C"; // Tailwind's red-700 — the exact hex the old card StatusBadge used for FAILED
+
+interface OrderRowItem {
+  titleSnapshot: string;
+  product: { subjectCode: string | null } | null;
+}
+
+/**
+ * The order's single product's subjectCode if set, else the title as a
+ * fallback — but only ever for a single-item order. Multi-item orders
+ * never list multiple titles/codes inline (that's what the detail page
+ * is for), just a count.
+ */
+function itemColumnLabel(items: OrderRowItem[]): string {
+  if (items.length === 0) return "—";
+  if (items.length > 1) return `${items.length} items`;
+  const code = items[0].product?.subjectCode?.trim();
+  return code || items[0].titleSnapshot;
+}
 import AutoRefresh from "@/components/AutoRefresh";
 
 const ORDERS_PAGE_SIZE = 50;
@@ -173,54 +196,47 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         <p className="text-slate">{hasFilters ? "No orders match these filters." : "No orders yet."}</p>
       ) : (
         <>
-          <div className="bg-white rounded-2xl border border-fog divide-y divide-fog">
+          {/*
+            Dense single-line-per-order table — replaces the old stacked
+            cards (~200-280px each), which made scanning/scrolling
+            impractical at 1,600+ orders. CSS grid rows rather than a
+            literal <table> so each row can be a real, keyboard-navigable,
+            right-click-openable <Link> (an <a> can't legally wrap a <tr>).
+          */}
+          <div className="bg-white rounded-2xl border border-fog divide-y divide-fog overflow-hidden">
+            <div className={`${GRID_COLS} px-4 py-2.5`}>
+              <span className="text-[11px] uppercase tracking-wide text-slate">Order</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate">Date</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate">Buyer</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate">Contact</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate">Item</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate text-right">Amount</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate text-right">Status</span>
+            </div>
+
             {orders.map((o) => (
-              <div key={o.id} className="px-5 py-4">
-                {/* Order # + date/time (left) — status + amount (right) */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 break-words">
-                    <p className="font-mono text-sm font-medium text-ink">#{formatOrderNumber(o.orderNumber)}</p>
-                    <p className="text-xs text-slate mt-0.5">{formatIstDateTime(o.createdAt)}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <StatusBadge status={o.status} />
-                    <p className="font-mono text-lg font-bold text-ink mt-1.5">
-                      ₹{(o.amountInPaise / 100).toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Buyer — name is the primary line, email/phone read as one quieter contact-info unit */}
-                <div className="mt-3 min-w-0 break-words">
-                  <p className="font-medium text-ink">{o.buyerName}</p>
-                  <p className="text-xs text-slate mt-0.5">
-                    {o.buyerEmail}
-                    {o.buyerPhone ? ` · ${o.buyerPhone}` : ""}
-                  </p>
-                </div>
-
-                {/* Payment reference — reconciliation detail, not glance-worthy, so it's collapsed */}
-                {o.razorpayPaymentId && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-slate hover:text-ink transition-colors cursor-pointer select-none">
-                      Payment reference
-                    </summary>
-                    <p className="text-xs text-slate font-mono break-words mt-1">{o.razorpayPaymentId}</p>
-                  </details>
-                )}
-
-                {/* Items */}
-                <div className="mt-3 pt-3 border-t border-fog space-y-1.5">
-                  {o.items.map((item) => (
-                    <div key={item.id} className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="text-slate break-words">{item.titleSnapshot}</span>
-                      <span className="font-mono text-slate shrink-0">
-                        ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Link
+                key={o.id}
+                href={`/dashboard/orders/${o.id}`}
+                className={`${GRID_COLS} px-4 h-10 text-xs hover:bg-paper transition-colors`}
+              >
+                <span className="font-mono text-ink truncate">{formatOrderNumber(o.orderNumber)}</span>
+                <span className="text-slate truncate">{formatCompactIstDateTime(o.createdAt)}</span>
+                <span className="text-ink truncate" title={o.buyerName}>
+                  {o.buyerName}
+                </span>
+                <span className="text-slate truncate">{o.buyerPhone || "—"}</span>
+                <span className="text-ink truncate">{itemColumnLabel(o.items)}</span>
+                <span className="font-mono text-ink text-right truncate">
+                  ₹{(o.amountInPaise / 100).toLocaleString("en-IN")}
+                </span>
+                <span
+                  className="text-right font-medium truncate"
+                  style={{ color: o.status === "PAID" ? "#2E5C8A" : FAILED_RED }}
+                >
+                  {o.status === "PAID" ? "Paid" : "Failed"}
+                </span>
+              </Link>
             ))}
           </div>
 
@@ -259,24 +275,5 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         </>
       )}
     </div>
-  );
-}
-
-// PENDING orders (checkout started, payment never confirmed — abandoned
-// carts, closed tabs, etc.) are shown as "Failed" here for simplicity,
-// since from the creator's point of view both mean "no money received."
-// The underlying PENDING status is still kept in the database for later
-// analytics; this is a display-only simplification. The "Failed" filter
-// above and the CSV export apply the same collapse (see orderFilters.ts).
-function StatusBadge({ status }: { status: string }) {
-  const isPaid = status === "PAID";
-  return (
-    <span
-      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-        isPaid ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50"
-      }`}
-    >
-      {isPaid ? "PAID" : "FAILED"}
-    </span>
   );
 }

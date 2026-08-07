@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = createProductSchema.safeParse({
     title: body.title,
+    subjectCode: body.subjectCode,
     description: body.description,
     priceInPaise: body.priceInPaise,
   });

@@ -90,6 +90,20 @@ export function formatIstDateTime(date: Date): string {
   return `${dd} ${month} ${yyyy}, ${hours12}:${minutes} ${period}`;
 }
 
+/** "07 Aug, 9:59a" — the dense orders table's compact column format (no year, lowercase a/p, no space before it). */
+export function formatCompactIstDateTime(date: Date): string {
+  const ist = toIst(date);
+  const dd = String(ist.getUTCDate()).padStart(2, "0");
+  const month = MONTH_ABBR[ist.getUTCMonth()];
+
+  const hours24 = ist.getUTCHours();
+  const minutes = String(ist.getUTCMinutes()).padStart(2, "0");
+  const period = hours24 >= 12 ? "p" : "a";
+  const hours12 = hours24 % 12 || 12;
+
+  return `${dd} ${month}, ${hours12}:${minutes}${period}`;
+}
+
 /**
  * "FE-000047" — orderNumber is now a sequential Postgres autoincrement
  * Int (see prisma/schema.prisma), zero-padded to 6 digits so small

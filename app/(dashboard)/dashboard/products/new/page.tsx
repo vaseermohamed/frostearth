@@ -17,6 +17,7 @@ export default function NewProductPage() {
 
     const form = new FormData(e.currentTarget);
     const title = form.get("title");
+    const subjectCode = form.get("subjectCode");
     const description = form.get("description");
     const priceInPaise = form.get("priceInPaise");
     const fileInput = form.get("file");
@@ -39,6 +40,11 @@ export default function NewProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          // Blank means "no code, fall back to the title" — dropping the
+          // key entirely (rather than sending "") keeps that unambiguous
+          // on the wire; the server-side schema treats absent the same
+          // as blank for a brand-new product either way.
+          subjectCode: subjectCode || undefined,
           description,
           priceInPaise: Number(priceInPaise),
           fileKey: uploadedFile.key,
@@ -71,6 +77,13 @@ export default function NewProductPage() {
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
           <input name="title" required className="w-full rounded-md border border-fog px-3 py-2" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Subject code</label>
+          <input name="subjectCode" maxLength={12} className="w-full rounded-md border border-fog px-3 py-2" />
+          <p className="text-xs text-slate mt-1">
+            Short internal code shown in the orders table (e.g. IP-TA-S). Leave blank to use the title.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>
