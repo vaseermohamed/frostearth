@@ -14,7 +14,15 @@ const DOWNLOAD_TOKEN_MAX_USES = 10;
  * Razorpay signature (checkout callback and/or webhook).
  */
 export class OrderService {
-  private payment = getPaymentService();
+  // Lazy, not eager: getPaymentService() throws if Razorpay credentials
+  // aren't configured, and OrderService is instantiated on pages that
+  // never touch payment (dashboard overview/orders, download redemption).
+  // Those must keep working even when payment isn't configured yet —
+  // only the methods that actually process a payment should be able to
+  // fail on missing credentials.
+  private get payment() {
+    return getPaymentService();
+  }
   private email = getEmailService();
 
   /**
