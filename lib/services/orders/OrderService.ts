@@ -1,11 +1,20 @@
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { getPaymentService } from "@/lib/services/payment";
 import { getEmailService } from "@/lib/services/email";
 import { v4 as uuid } from "uuid";
-import { formatOrderNumber, formatIstDateTime } from "@/lib/services/orders/orderFilters";
+import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 const DOWNLOAD_TOKEN_MAX_USES = 10;
+
+interface OrderListFilters {
+  fromDate?: Date;
+  toDate?: Date;
+  status?: "PAID" | "FAILED";
+  productId?: string;
+  search?: { type: OrderSearchType; query: string };
+}
 
 /**
  * Owns the PENDING -> PAID/FAILED lifecycle for cart checkouts (one or
@@ -246,36 +255,54 @@ export class OrderService {
 
   /**
    * `filters` is optional so every existing call site (dashboard overview
-   * stats, which wants every order) keeps working unchanged. `status:
-   * "FAILED"` matches both FAILED and PENDING orders — the dashboard's
-   * on-screen badge already collapses PENDING into "Failed" for display
-   * (see StatusBadge in the orders page), so the filter has to match what
-   * a creator actually sees, not the raw underlying status.
+   * stats, and the CSV export) keeps working unchanged. Unbounded on
+   * purpose — the overview needs every order for accurate aggregate
+   * stats, and the CSV export must return every matching row regardless
+   * of what page the creator is currently viewing on the Orders page, so
+   * neither of them can go through the paginated method below.
    */
-  async listForStore(
-    storeId: string,
-    filters: { fromDate?: Date; toDate?: Date; status?: "PAID" | "FAILED"; productId?: string } = {}
-  ) {
-    const { fromDate, toDate, status, productId } = filters;
-
+  async listForStore(storeId: string, filters: OrderListFilters = {}) {
     return prisma.order.findMany({
-      where: {
-        storeId,
-        ...(fromDate || toDate
-          ? {
-              createdAt: {
-                ...(fromDate ? { gte: fromDate } : {}),
-                ...(toDate ? { lte: toDate } : {}),
-              },
-            }
-          : {}),
-        ...(status === "PAID" ? { status: "PAID" as const } : {}),
-        ...(status === "FAILED" ? { status: { in: ["FAILED", "PENDING"] as const } } : {}),
-        ...(productId ? { items: { some: { productId } } } : {}),
-      },
+      where: buildOrderWhere(storeId, filters),
       include: { items: true },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  /**
+   * The Orders page's actual query — a real bounded fetch via Prisma's
+   * skip/take, not an unbounded findMany() sliced in JS (that would still
+   * pull every matching row from the DB on every request, solving
+   * nothing at 1500+ orders and growing). The count() runs in the same
+   * $transaction as the page fetch so both queries share one consistent
+   * snapshot and go over the wire together.
+   */
+  async listForStorePaginated(
+    storeId: string,
+    filters: OrderListFilters,
+    pagination: { page: number; pageSize: number }
+  ) {
+    const where = buildOrderWhere(storeId, filters);
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const [orders, total] = await prisma.$transaction([
+      prisma.order.findMany({
+        where,
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pagination.pageSize,
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return {
+      orders,
+      total,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pagination.pageSize)),
+    };
   }
 
   /** Resolves a download token to file bytes, enforcing expiry + use-count + paid status. */
@@ -296,10 +323,201 @@ export class OrderService {
 
     return record.orderItem.product;
   }
+
+  /**
+   * The dashboard metrics row's four numbers for one date range. Called
+   * twice by the page (current range, comparison range) to compute the
+   * percentage-change indicators — count()/aggregate() here, never a full
+   * row fetch, since none of the four numbers need the actual order rows.
+   */
+  async getDashboardStats(storeId: string, from: Date | undefined, to: Date) {
+    const dateWhere: Prisma.OrderWhereInput = { createdAt: { ...(from ? { gte: from } : {}), lte: to } };
+
+    const [paidCount, revenueAgg, failedCount] = await Promise.all([
+      prisma.order.count({ where: { storeId, ...dateWhere, status: "PAID" } }),
+      prisma.order.aggregate({
+        where: { storeId, ...dateWhere, status: "PAID" },
+        _sum: { amountInPaise: true },
+      }),
+      // FAILED + PENDING, same collapse as the Orders page badge and filters.
+      prisma.order.count({ where: { storeId, ...dateWhere, status: { in: ["FAILED", "PENDING"] } } }),
+    ]);
+
+    const revenueInPaise = revenueAgg._sum.amountInPaise ?? 0;
+    const attempted = paidCount + failedCount;
+    const conversionRate = attempted > 0 ? (paidCount / attempted) * 100 : 0;
+
+    return { revenueInPaise, paidCount, failedCount, conversionRate };
+  }
+
+  /**
+   * One row per IST calendar day in [from, to] for the paid-vs-failed
+   * line chart, densified so zero-order days still appear on the x-axis
+   * instead of being skipped (skipping them would misrepresent gaps as
+   * compressed time). The underlying query only selects createdAt/status
+   * — no amounts, no relations — and is bounded by the same range every
+   * other widget on the page uses. For "All time" (from=undefined) the
+   * chart's start is the earliest ACTUAL order in this store rather than
+   * an arbitrary epoch, so a young store never has to walk years of
+   * empty days; the fetch itself is still genuinely unbounded in that one
+   * specific case, which is inherent to what "All time" means, not a
+   * missed bound — every other range has a real `gte`.
+   */
+  async getDailyOrderCounts(storeId: string, from: Date | undefined, to: Date) {
+    const orders = await prisma.order.findMany({
+      where: { storeId, createdAt: { ...(from ? { gte: from } : {}), lte: to } },
+      select: { createdAt: true, status: true },
+    });
+
+    const byDay = new Map<string, { paid: number; failed: number }>();
+    let earliest = to;
+    for (const o of orders) {
+      if (o.createdAt < earliest) earliest = o.createdAt;
+      const key = dayKey(toIst(o.createdAt));
+      const bucket = byDay.get(key) ?? { paid: 0, failed: 0 };
+      if (o.status === "PAID") bucket.paid++;
+      else bucket.failed++; // FAILED or PENDING, same collapse as elsewhere
+      byDay.set(key, bucket);
+    }
+
+    const rangeStart = from ?? (orders.length > 0 ? earliest : to);
+    const cursor = toIst(rangeStart);
+    cursor.setUTCHours(0, 0, 0, 0);
+    const end = toIst(to);
+    end.setUTCHours(0, 0, 0, 0);
+
+    const series: { date: string; paid: number; failed: number }[] = [];
+    while (cursor.getTime() <= end.getTime()) {
+      const bucket = byDay.get(dayKey(cursor)) ?? { paid: 0, failed: 0 };
+      series.push({ date: formatShortDay(cursor), paid: bucket.paid, failed: bucket.failed });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return series;
+  }
+
+  /**
+   * Top products by revenue in [from, to], PAID orders only. Sums
+   * OrderItem.priceInPaiseSnapshot (the price at time of sale, immune to
+   * later product price/title changes) grouped by productId in
+   * application code — a plain findMany with a lean select, not a Prisma
+   * groupBy across the order relation, which would be more moving parts
+   * than this actually needs at current scale.
+   */
+  async getTopProducts(storeId: string, from: Date | undefined, to: Date, limit = 5) {
+    const items = await prisma.orderItem.findMany({
+      where: {
+        order: { storeId, status: "PAID", createdAt: { ...(from ? { gte: from } : {}), lte: to } },
+      },
+      select: { productId: true, titleSnapshot: true, priceInPaiseSnapshot: true },
+    });
+
+    const byProduct = new Map<string, { title: string; revenueInPaise: number }>();
+    for (const item of items) {
+      const existing = byProduct.get(item.productId) ?? { title: item.titleSnapshot, revenueInPaise: 0 };
+      existing.revenueInPaise += item.priceInPaiseSnapshot;
+      byProduct.set(item.productId, existing);
+    }
+
+    return Array.from(byProduct.entries())
+      .map(([productId, v]) => ({ productId, ...v }))
+      .sort((a, b) => b.revenueInPaise - a.revenueInPaise)
+      .slice(0, limit);
+  }
+
+  /**
+   * The latest few orders regardless of the dashboard's selected date
+   * range — "what just happened," not scoped by the filter that governs
+   * every other widget on the page.
+   */
+  async getRecentOrders(storeId: string, limit = 5) {
+    return prisma.order.findMany({
+      where: { storeId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        orderNumber: true,
+        buyerName: true,
+        amountInPaise: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  }
+}
+
+/**
+ * Shared by listForStore and listForStorePaginated so the two query paths
+ * (unbounded export/stats vs. bounded page view) can never drift apart on
+ * what "matches the current filters" means.
+ */
+function buildOrderWhere(storeId: string, filters: OrderListFilters): Prisma.OrderWhereInput {
+  const { fromDate, toDate, status, productId, search } = filters;
+
+  return {
+    storeId,
+    ...(fromDate || toDate
+      ? {
+          createdAt: {
+            ...(fromDate ? { gte: fromDate } : {}),
+            ...(toDate ? { lte: toDate } : {}),
+          },
+        }
+      : {}),
+    // "FAILED" matches both FAILED and PENDING orders — the dashboard's
+    // on-screen badge already collapses PENDING into "Failed" for display
+    // (see StatusBadge in the orders page), so the filter has to match
+    // what a creator actually sees, not the raw underlying status.
+    ...(status === "PAID" ? { status: "PAID" as const } : {}),
+    ...(status === "FAILED" ? { status: { in: ["FAILED", "PENDING"] as const } } : {}),
+    ...(productId ? { items: { some: { productId } } } : {}),
+    ...buildSearchWhere(search),
+  };
+}
+
+function buildSearchWhere(search?: { type: OrderSearchType; query: string }): Prisma.OrderWhereInput {
+  if (!search) return {};
+
+  switch (search.type) {
+    case "orderNumber": {
+      // orderNumber is a real Postgres Int (see prisma/schema.prisma), so
+      // this is an exact match, not a substring one — Prisma/Postgres
+      // can't do "contains" on an integer column without a text cast,
+      // and exact ID lookup is the normal expectation anyway (a creator
+      // pastes/types the number off a receipt, e.g. "47" or "FE-000047").
+      // Non-digit input (or none) must match nothing, not silently fall
+      // through to "no filter" and return every order.
+      const digitsOnly = search.query.replace(/\D/g, "");
+      const parsed = digitsOnly ? parseInt(digitsOnly, 10) : NaN;
+      return { orderNumber: Number.isNaN(parsed) ? -1 : parsed };
+    }
+    case "email":
+      return { buyerEmail: { contains: search.query, mode: "insensitive" as const } };
+    case "phone":
+      return { buyerPhone: { contains: search.query } };
+    case "paymentRef":
+      return { razorpayPaymentId: { contains: search.query } };
+    case "buyerName":
+      return { buyerName: { contains: search.query, mode: "insensitive" as const } };
+    default:
+      return {};
+  }
 }
 
 export function getOrderService() {
   return new OrderService();
+}
+
+/** Groups an IST-shifted Date into its calendar day — same key regardless of time-of-day, so all of one IST day's orders land in one bucket. */
+function dayKey(istDate: Date): string {
+  return `${istDate.getUTCFullYear()}-${istDate.getUTCMonth()}-${istDate.getUTCDate()}`;
+}
+
+/** "05 Aug" — the line chart's x-axis label. Reuses MONTH_ABBR from orderFilters.ts rather than a second month-name list. */
+function formatShortDay(istDate: Date): string {
+  const dd = String(istDate.getUTCDate()).padStart(2, "0");
+  return `${dd} ${MONTH_ABBR[istDate.getUTCMonth()]}`;
 }
 
 function escapeHtml(str: string): string {

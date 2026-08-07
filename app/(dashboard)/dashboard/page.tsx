@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { getProductService } from "@/lib/services/products/ProductService";
 import { getOrderService } from "@/lib/services/orders/OrderService";
+import AutoRefresh from "@/components/AutoRefresh";
 
 export default async function DashboardOverviewPage() {
   const session = await getSession();
@@ -16,6 +17,7 @@ export default async function DashboardOverviewPage() {
 
   return (
     <div>
+      <AutoRefresh />
       <h1 className="text-2xl font-semibold mb-6">Overview</h1>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Stat label="Products" value={products.length} />

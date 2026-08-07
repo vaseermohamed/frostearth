@@ -1,8 +1,21 @@
+export type OrderSearchType = "orderNumber" | "email" | "phone" | "paymentRef" | "buyerName";
+
+/** Single source of truth for the search-field dropdown — the orders page renders its <option>s from this, and parseOrderFilters validates against it, so the two can never drift apart. */
+export const ORDER_SEARCH_TYPES: { value: OrderSearchType; label: string }[] = [
+  { value: "orderNumber", label: "Order Number" },
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Mobile number" },
+  { value: "paymentRef", label: "Payment reference" },
+  { value: "buyerName", label: "Buyer name" },
+];
+
 export interface OrderFilterParams {
   fromDate?: string;
   toDate?: string;
   status?: string;
   productId?: string;
+  searchType?: string;
+  searchQuery?: string;
 }
 
 export interface ParsedOrderFilters {
@@ -10,11 +23,12 @@ export interface ParsedOrderFilters {
   toDate?: Date;
   status?: "PAID" | "FAILED";
   productId?: string;
+  search?: { type: OrderSearchType; query: string };
 }
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
-const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * Shared by the orders dashboard page and the CSV export route so both
@@ -25,15 +39,20 @@ const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep
  * shifted by the 5:30 IST offset.
  */
 export function parseOrderFilters(params: OrderFilterParams): ParsedOrderFilters {
+  const query = params.searchQuery?.trim();
+  const isValidType = ORDER_SEARCH_TYPES.some((t) => t.value === params.searchType);
+
   return {
     fromDate: parseIstDate(params.fromDate),
     toDate: parseIstDate(params.toDate, { endOfDay: true }),
     status: params.status === "PAID" || params.status === "FAILED" ? params.status : undefined,
     productId: params.productId || undefined,
+    search: query && isValidType ? { type: params.searchType as OrderSearchType, query } : undefined,
   };
 }
 
-function parseIstDate(value: string | undefined, opts?: { endOfDay?: boolean }): Date | undefined {
+/** Exported so the dashboard's date-range control (dateRanges.ts) can parse custom from/to dates with this exact same IST-correct logic instead of a second implementation. */
+export function parseIstDate(value: string | undefined, opts?: { endOfDay?: boolean }): Date | undefined {
   if (!value) return undefined;
   const naiveUtcMidnight = new Date(`${value}T00:00:00.000Z`);
   if (isNaN(naiveUtcMidnight.getTime())) return undefined;

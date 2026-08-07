@@ -30,8 +30,13 @@ export async function GET(req: NextRequest) {
     toDate: searchParams.get("toDate") || undefined,
     status: searchParams.get("status") || undefined,
     productId: searchParams.get("productId") || undefined,
+    searchType: searchParams.get("searchType") || undefined,
+    searchQuery: searchParams.get("searchQuery") || undefined,
   });
 
+  // listForStore (not listForStorePaginated) — every matching row, always,
+  // regardless of what page the creator currently has open on the Orders
+  // page. Pagination must never change what an export contains.
   const orders = await getOrderService().listForStore(session.storeId, filters);
 
   const rows = orders.map((o) => [
