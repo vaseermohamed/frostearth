@@ -37,51 +37,61 @@ export default function OrdersLineChart({ data }: { data: DailyOrderCount[] }) {
           <span className="text-slate">Failed</span>
         </span>
       </div>
-      <Line
-        data={{
-          labels: data.map((d) => d.date),
-          datasets: [
-            {
-              label: "Paid",
-              data: data.map((d) => d.paid),
-              borderColor: FROST,
-              backgroundColor: FROST,
-              tension: 0.3,
-              pointRadius: 2,
-              borderWidth: 2,
+      {/*
+        Chart.js + `maintainAspectRatio: false` sizes the canvas off its
+        PARENT's CSS box, not the `height` prop on <Line> (that only sets
+        the canvas's intrinsic resolution attribute, not a layout
+        constraint). Without an explicitly-heighted, position:relative
+        wrapper here, the canvas has nothing bounded to measure against
+        and the container grows unbounded — this div is the actual fix,
+        not the options object.
+      */}
+      <div className="relative h-[300px]">
+        <Line
+          data={{
+            labels: data.map((d) => d.date),
+            datasets: [
+              {
+                label: "Paid",
+                data: data.map((d) => d.paid),
+                borderColor: FROST,
+                backgroundColor: FROST,
+                tension: 0.3,
+                pointRadius: 2,
+                borderWidth: 2,
+              },
+              {
+                label: "Failed",
+                data: data.map((d) => d.failed),
+                borderColor: FAILED_RED,
+                backgroundColor: FAILED_RED,
+                tension: 0.3,
+                pointRadius: 2,
+                borderWidth: 2,
+              },
+            ],
+          }}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { mode: "index", intersect: false },
             },
-            {
-              label: "Failed",
-              data: data.map((d) => d.failed),
-              borderColor: FAILED_RED,
-              backgroundColor: FAILED_RED,
-              tension: 0.3,
-              pointRadius: 2,
-              borderWidth: 2,
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: SLATE, font: { size: 11 }, maxRotation: 0, autoSkip: true },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0, color: SLATE, font: { size: 11 } },
+                grid: { color: FOG },
+              },
             },
-          ],
-        }}
-        options={{
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { mode: "index", intersect: false },
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: SLATE, font: { size: 11 }, maxRotation: 0, autoSkip: true },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0, color: SLATE, font: { size: 11 } },
-              grid: { color: FOG },
-            },
-          },
-        }}
-        height={240}
-      />
+          }}
+        />
+      </div>
     </div>
   );
 }
