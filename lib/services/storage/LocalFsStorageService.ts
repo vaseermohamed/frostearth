@@ -37,6 +37,15 @@ export class LocalFsStorageService implements StorageService {
     await fs.rm(this.resolvePath(key), { force: true });
   }
 
+  async exists(key: string): Promise<boolean> {
+    try {
+      await fs.access(this.resolvePath(key));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async getSignedUrl(key: string): Promise<string> {
     // Local driver has no native signed URLs — the download route itself
     // does the authorization check (see app/api/download/[token]).

@@ -15,6 +15,13 @@ export interface StorageService {
   delete(key: string): Promise<void>;
 
   /**
+   * Cheap existence check — no body transfer. Used to test whether a
+   * cached derived file (e.g. a watermarked copy) already exists before
+   * regenerating it, without paying for a full download just to find out.
+   */
+  exists(key: string): Promise<boolean>;
+
+  /**
    * A URL the browser can hit directly for a short time.
    * Local implementation proxies through an API route since raw disk
    * paths aren't web-accessible; S3/R2 implementations would return a

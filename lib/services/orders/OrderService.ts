@@ -313,7 +313,12 @@ export class OrderService {
     };
   }
 
-  /** Resolves a download token to file bytes, enforcing expiry + use-count + paid status. */
+  /**
+   * Resolves a download token to the product it unlocks plus the buyer
+   * identity that watermarking needs — the caller (DownloadService) never
+   * touches the client for any of this, only what a verified, paid order
+   * record actually says. Enforces expiry + use-count + paid status.
+   */
   async redeemDownloadToken(token: string) {
     const record = await prisma.downloadToken.findUnique({
       where: { token },
@@ -329,7 +334,17 @@ export class OrderService {
       data: { usedCount: { increment: 1 } },
     });
 
-    return record.orderItem.product;
+    const { id: orderItemId, product, order } = record.orderItem;
+    return {
+      product,
+      orderItemId,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        buyerName: order.buyerName,
+        buyerEmail: order.buyerEmail,
+      },
+    };
   }
 
   /**
