@@ -50,6 +50,33 @@ interface Outcome {
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
+
+  // TEMPORARY — diagnosing a production 401 that persists despite a
+  // verified-correct client request. Logs shape/length only, never the
+  // actual header or secret value. Remove once the root cause is found
+  // and fixed (see chat history / commit that added this).
+  const envSecret = process.env.CRON_SECRET;
+  const strippedHeader = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : authHeader ?? null;
+  console.log(
+    "[cleanup-watermarks][DEBUG-AUTH]",
+    JSON.stringify({
+      hasAuthHeader: authHeader !== null,
+      authHeaderLength: authHeader?.length ?? -1,
+      startsWithBearerSpace: authHeader?.startsWith("Bearer ") ?? false,
+      strippedHeaderLength: strippedHeader?.length ?? -1,
+      envSecretDefined: envSecret !== undefined,
+      envSecretLength: envSecret?.length ?? -1,
+      envSecretTrimmedLength: envSecret?.trim().length ?? -1,
+      envSecretHasSurroundingWhitespace: envSecret !== undefined && envSecret !== envSecret.trim(),
+      lengthsMatchAfterStrip: strippedHeader !== null && envSecret !== undefined && strippedHeader.length === envSecret.length,
+      lengthsMatchAfterStripAndTrim:
+        strippedHeader !== null && envSecret !== undefined && strippedHeader.length === envSecret.trim().length,
+      valuesMatchExactly: strippedHeader !== null && envSecret !== undefined && strippedHeader === envSecret,
+      valuesMatchAfterTrimBothSides:
+        strippedHeader !== null && envSecret !== undefined && strippedHeader.trim() === envSecret.trim(),
+    })
+  );
+
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
