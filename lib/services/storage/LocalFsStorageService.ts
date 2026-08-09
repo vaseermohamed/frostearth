@@ -63,4 +63,30 @@ export class LocalFsStorageService implements StorageService {
     // presigned URL provides.
     return `/api/storage/${key}`;
   }
+
+  async listKeys(prefix: string): Promise<string[]> {
+    const startDir = this.resolvePath(prefix);
+    const keys: string[] = [];
+
+    async function walk(dir: string) {
+      let entries: import("fs").Dirent[];
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch {
+        return; // prefix doesn't exist yet — nothing stored under it, not an error
+      }
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+        } else {
+          keys.push(path.relative(startRoot, fullPath).split(path.sep).join("/"));
+        }
+      }
+    }
+
+    const startRoot = this.root;
+    await walk(startDir);
+    return keys;
+  }
 }

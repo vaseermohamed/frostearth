@@ -41,4 +41,13 @@ export interface StorageService {
    * presigned PUT URL. Callers never need to know the difference.
    */
   getUploadUrl(key: string, contentType: string, expiresInSeconds: number): Promise<string>;
+
+  /**
+   * Every key stored under `prefix`, fully paginated (R2/S3 caps a single
+   * ListObjectsV2 response at 1000 keys — callers never need to know
+   * that, or handle continuation tokens themselves). Used by the
+   * watermark cleanup cron to enumerate cached files without needing a
+   * DB-side index of what's in storage.
+   */
+  listKeys(prefix: string): Promise<string[]>;
 }
