@@ -334,15 +334,15 @@ export class OrderService {
       data: { usedCount: { increment: 1 } },
     });
 
-    const { id: orderItemId, product, order } = record.orderItem;
+    const { product, order } = record.orderItem;
     return {
       product,
-      orderItemId,
       order: {
         id: order.id,
         orderNumber: order.orderNumber,
         buyerName: order.buyerName,
         buyerEmail: order.buyerEmail,
+        buyerPhone: order.buyerPhone,
       },
     };
   }

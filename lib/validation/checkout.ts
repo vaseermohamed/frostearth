@@ -8,11 +8,12 @@ export const createCheckoutSchema = z.object({
   productIds: z.array(z.string().min(1)).min(1, "Cart is empty").max(50, "Too many items in cart"),
   buyerName: z.string().min(1, "Name is required").max(200),
   buyerEmail: z.string().email().max(254),
-  buyerPhone: z
-    .string()
-    .regex(/^\d{10}$/, "Phone number must be exactly 10 digits")
-    .optional()
-    .or(z.literal("")),
+  // Mandatory at the application layer only — Order.buyerPhone stays a
+  // nullable DB column (see prisma/schema.prisma) because historical
+  // orders placed before this requirement have no phone on record, and
+  // that data must keep working, not get force-migrated. Zod is what
+  // actually enforces "required" for every NEW checkout from here on.
+  buyerPhone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
 });
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
 

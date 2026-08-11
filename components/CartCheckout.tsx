@@ -59,8 +59,8 @@ export default function CartCheckout({
       return;
     }
     const digitsOnly = phone.replace(/\D/g, "");
-    if (phone && digitsOnly.length !== 10) {
-      setError("Mobile number must be exactly 10 digits.");
+    if (digitsOnly.length !== 10) {
+      setError("Enter a valid 10-digit mobile number.");
       return;
     }
 
@@ -80,7 +80,7 @@ export default function CartCheckout({
         productIds: items.map((i) => i.productId),
         buyerName: name,
         buyerEmail: email,
-        buyerPhone: digitsOnly || undefined,
+        buyerPhone: digitsOnly,
       }),
     });
     const created = await createRes.json();
@@ -96,7 +96,7 @@ export default function CartCheckout({
       currency: "INR",
       name: "FrostEarth",
       order_id: created.razorpayOrderId,
-      prefill: { name, email, contact: digitsOnly || undefined },
+      prefill: { name, email, contact: digitsOnly },
       method: { upi: true, card: true, netbanking: true },
       handler: async (response: any) => {
         const verifyRes = await fetch("/api/checkout/verify", {

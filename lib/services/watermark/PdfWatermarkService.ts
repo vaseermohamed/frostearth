@@ -6,6 +6,8 @@ export interface WatermarkData {
   orderNumber: number;
   buyerName: string;
   buyerEmail: string;
+  /** Nullable — historical orders placed before phone became mandatory at checkout have none on record. Omitted cleanly from every layer below when absent, never rendered as "null"/blank. */
+  buyerPhone: string | null;
 }
 
 /**
@@ -33,8 +35,8 @@ export async function applyWatermark(pdfBytes: Buffer, data: WatermarkData): Pro
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   const orderLabel = formatOrderNumber(data.orderNumber);
-  const tileText = `${data.buyerName} · Order ${orderLabel}`;
-  const footerText = `Order ${orderLabel} · ${data.buyerEmail}`;
+  const tileText = [data.buyerName, `Order ${orderLabel}`, data.buyerPhone].filter(Boolean).join(" · ");
+  const footerText = [`Order ${orderLabel}`, data.buyerEmail, data.buyerPhone].filter(Boolean).join(" · ");
 
   for (const page of pdfDoc.getPages()) {
     drawTiledWatermark(page, font, tileText);
@@ -103,9 +105,14 @@ function drawFooter(page: PDFPage, font: PDFFont, text: string) {
  * lookup right after is always safe.
  */
 function writeInfoMetadata(pdfDoc: PDFDocument, data: WatermarkData, orderLabel: string) {
+  const contactSuffix = data.buyerPhone ? ` · ${data.buyerPhone}` : "";
   pdfDoc.setAuthor(data.buyerName);
-  pdfDoc.setSubject(`Licensed to ${data.buyerName} <${data.buyerEmail}> — Order ${orderLabel}`);
-  pdfDoc.setKeywords([`FrostEarth`, `Order ${orderLabel}`, data.buyerEmail, data.orderId]);
+  pdfDoc.setSubject(`Licensed to ${data.buyerName} <${data.buyerEmail}>${contactSuffix} — Order ${orderLabel}`);
+  pdfDoc.setKeywords(
+    [`FrostEarth`, `Order ${orderLabel}`, data.buyerEmail, data.buyerPhone, data.orderId].filter(
+      (v): v is string => Boolean(v)
+    )
+  );
   pdfDoc.setProducer("FrostEarth");
   pdfDoc.setModificationDate(new Date());
 
@@ -114,6 +121,9 @@ function writeInfoMetadata(pdfDoc: PDFDocument, data: WatermarkData, orderLabel:
   if (infoDict) {
     infoDict.set(PDFName.of("FrostEarthOrderID"), PDFString.of(data.orderId));
     infoDict.set(PDFName.of("FrostEarthBuyerEmail"), PDFString.of(data.buyerEmail));
+    if (data.buyerPhone) {
+      infoDict.set(PDFName.of("FrostEarthBuyerPhone"), PDFString.of(data.buyerPhone));
+    }
   }
 }
 
@@ -135,7 +145,11 @@ function writeXmpMetadata(pdfDoc: PDFDocument, data: WatermarkData, orderLabel: 
 
 function buildXmpXml(data: WatermarkData, orderLabel: string): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  return [
+  const keywordParts = [`FrostEarth Order ${orderLabel}`, data.buyerEmail, data.buyerPhone, data.orderId].filter(
+    (v): v is string => Boolean(v)
+  );
+
+  const lines = [
     `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>`,
     `<x:xmpmeta xmlns:x="adobe:ns:meta/">`,
     `<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">`,
@@ -145,14 +159,16 @@ function buildXmpXml(data: WatermarkData, orderLabel: string): string {
     `  xmlns:frostearth="https://frostearth.in/ns/1.0/">`,
     `<dc:creator><rdf:Seq><rdf:li>${esc(data.buyerName)}</rdf:li></rdf:Seq></dc:creator>`,
     `<dc:description><rdf:Alt><rdf:li xml:lang="x-default">${esc(data.buyerEmail)}</rdf:li></rdf:Alt></dc:description>`,
-    `<pdf:Keywords>${esc(`FrostEarth Order ${orderLabel}; ${data.buyerEmail}; ${data.orderId}`)}</pdf:Keywords>`,
+    `<pdf:Keywords>${esc(keywordParts.join("; "))}</pdf:Keywords>`,
     `<frostearth:orderId>${esc(data.orderId)}</frostearth:orderId>`,
     `<frostearth:orderNumber>${esc(orderLabel)}</frostearth:orderNumber>`,
     `<frostearth:buyerEmail>${esc(data.buyerEmail)}</frostearth:buyerEmail>`,
     `<frostearth:buyerName>${esc(data.buyerName)}</frostearth:buyerName>`,
-    `</rdf:Description>`,
-    `</rdf:RDF>`,
-    `</x:xmpmeta>`,
-    `<?xpacket end="w"?>`,
-  ].join("\n");
+  ];
+  if (data.buyerPhone) {
+    lines.push(`<frostearth:buyerPhone>${esc(data.buyerPhone)}</frostearth:buyerPhone>`);
+  }
+  lines.push(`</rdf:Description>`, `</rdf:RDF>`, `</x:xmpmeta>`, `<?xpacket end="w"?>`);
+
+  return lines.join("\n");
 }
