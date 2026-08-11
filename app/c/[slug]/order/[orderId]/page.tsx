@@ -76,7 +76,7 @@ export default async function OrderConfirmationPage({
               <p className="text-sm font-medium text-ink break-words">{d.title}</p>
             </div>
             <a
-              href={`/api/download/${d.token}`}
+              href={`/download/${d.token}`}
               className="flex items-center justify-center gap-2 w-full rounded-full bg-ink hover:bg-ink/85 transition-colors text-white text-sm font-medium px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-frost focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
               <DownloadIcon />

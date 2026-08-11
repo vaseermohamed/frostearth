@@ -583,7 +583,7 @@ function buildReceiptEmailHtml(params: {
               </tr>
               <tr>
                 <td style="padding:0 0 20px 0;">
-                  <a href="${appUrl}/api/download/${t.token}" style="display:inline-block; background-color:#2E5C8A; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-decoration:none; padding:10px 22px; border-radius:24px;">Download</a>
+                  <a href="${appUrl}/download/${t.token}" style="display:inline-block; background-color:#2E5C8A; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-decoration:none; padding:10px 22px; border-radius:24px;">Download</a>
                 </td>
               </tr>`
     )
