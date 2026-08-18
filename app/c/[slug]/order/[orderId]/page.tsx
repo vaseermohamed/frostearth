@@ -86,8 +86,11 @@ export default async function OrderConfirmationPage({
         ))}
       </div>
 
-      <p className="text-sm text-slate text-center mb-8">
+      <p className="text-sm text-slate text-center mb-1">
         These links are also in your email and stay valid for 3 days.
+      </p>
+      <p className="text-xs text-slate text-center mb-8">
+        For best results, open this link in Safari or Chrome rather than inside an app like Instagram or WhatsApp.
       </p>
 
       <div className="text-center">

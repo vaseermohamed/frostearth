@@ -645,7 +645,8 @@ function buildReceiptEmailHtml(params: {
         </tr>
         <tr>
           <td style="padding:0 32px 32px 32px;">
-            <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">These links expire in 3 days and can be used up to 10 times.</p>
+            <p style="margin:0 0 4px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">These links expire in 3 days and can be used up to 10 times.</p>
+            <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6B6B68;">For best results, open this link in Safari or Chrome rather than inside an app like Instagram or WhatsApp.</p>
           </td>
         </tr>
         <tr>

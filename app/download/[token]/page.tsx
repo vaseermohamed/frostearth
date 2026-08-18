@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { detectDownloadEnvironment, detectInAppBrowserName, DownloadEnvironment } from "@/lib/utils/downloadEnvironment";
 
 type Stage = "loading" | "success" | "error";
 
@@ -20,6 +21,15 @@ const SNAP_TRANSITION_MS = 200;
 export default function DownloadInterstitialPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const directUrl = `/api/download/${token}`;
+
+  // null = not yet determined (always true during SSR and for one brief
+  // client tick after mount — see downloadEnvironment.ts). Nothing that
+  // touches the network is allowed to fire until this resolves, so an
+  // in-app browser never wastes a token redemption or watermark
+  // generation on a download it can't complete anyway.
+  const [environment, setEnvironment] = useState<DownloadEnvironment | null>(null);
+  const [inAppBrowserName, setInAppBrowserName] = useState<string | null>(null);
 
   const [stage, setStage] = useState<Stage>("loading");
   const [progress, setProgress] = useState(0);
@@ -30,6 +40,31 @@ export default function DownloadInterstitialPage() {
   const fileNameRef = useRef<string>("download.pdf");
 
   useEffect(() => {
+    setEnvironment(detectDownloadEnvironment());
+    setInAppBrowserName(detectInAppBrowserName());
+  }, []);
+
+  // iOS: skip blob+fetch entirely (see downloadEnvironment.ts — WebKit's
+  // blob: URL navigation is known to crash on some iOS versions). A
+  // plain top-level navigation to the API route is the mechanism —
+  // Content-Disposition: attachment makes the browser download the file
+  // and stay on this page, exactly like a real link click would.
+  // Auto-fired once so the download still "just starts" the way it does
+  // for standard browsers; the visible button/link below is there
+  // regardless in case the auto-fire is blocked for any reason.
+  useEffect(() => {
+    if (environment !== "ios") return;
+    window.location.href = directUrl;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [environment]);
+
+  // Standard path: the existing blob+fetch mechanism, confirmed working
+  // on desktop and Android via earlier live testing. Gated on
+  // environment === "standard" specifically (not "environment resolved
+  // and isn't ios/in-app"), so this is the one and only path that ever
+  // calls fetch() here.
+  useEffect(() => {
+    if (environment !== "standard") return;
     let cancelled = false;
 
     // Kick the fill toward the ceiling on the next frame, not this one —
@@ -39,7 +74,7 @@ export default function DownloadInterstitialPage() {
       if (!cancelled) setProgress(PROGRESS_CEILING);
     });
 
-    fetch(`/api/download/${token}`)
+    fetch(directUrl)
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -78,7 +113,7 @@ export default function DownloadInterstitialPage() {
       cancelAnimationFrame(raf);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [environment]);
 
   // Blob URL stays alive for "Download again" to reuse without a second
   // network request — only released when the page itself goes away.
@@ -99,6 +134,54 @@ export default function DownloadInterstitialPage() {
 
   function handleDownloadAgain() {
     if (blobUrlRef.current) triggerSave(blobUrlRef.current, fileNameRef.current);
+  }
+
+  // In-app/WebView browsers: no client-side technique works here at
+  // all (see downloadEnvironment.ts) — don't attempt one. The only real
+  // fix is leaving the app, so that's the entire message.
+  if (environment === "in-app-browser") {
+    return (
+      <div className="max-w-sm mx-auto px-4 py-16 sm:py-24 text-center">
+        <div className="flex justify-center mb-5">
+          <div className="w-[52px] h-[52px] rounded-xl bg-fog flex items-center justify-center text-slate">
+            <AlertIcon />
+          </div>
+        </div>
+        <p className="text-[15px] font-medium text-ink mb-1">Open this link in your browser</p>
+        <p className="text-[13px] text-slate mb-6 max-w-xs mx-auto">
+          {inAppBrowserName ? `${inAppBrowserName}'s built-in browser` : "This app's built-in browser"} can't save
+          files. Tap the ••• or share icon, then choose "Open in Safari," "Open in Chrome," or "Open in browser" to
+          continue.
+        </p>
+      </div>
+    );
+  }
+
+  // iOS: no loading/progress narrative here — there's no fetch to watch
+  // resolve, since the whole point is avoiding one. Just a direct link,
+  // auto-fired above and always present to tap manually too.
+  if (environment === "ios") {
+    return (
+      <div className="max-w-sm mx-auto px-4 py-16 sm:py-24 text-center">
+        <div className="flex justify-center mb-5">
+          <div className="w-[52px] h-[52px] rounded-xl bg-fog flex items-center justify-center text-slate">
+            <FileIcon />
+          </div>
+        </div>
+        <p className="text-[15px] font-medium text-ink mb-1">Your download is ready</p>
+        <p className="text-[13px] text-slate mb-6">Tap below to save your file</p>
+        <a
+          href={directUrl}
+          className="flex items-center justify-center gap-2 w-full rounded-full bg-ink hover:bg-ink/85 transition-colors text-white text-sm font-medium px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-frost focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+        >
+          <DownloadIcon />
+          Download PDF
+        </a>
+        <a href={directUrl} className="block mt-4 text-xs text-slate hover:text-ink transition-colors underline">
+          Download not starting? Tap here
+        </a>
+      </div>
+    );
   }
 
   if (stage === "error") {
@@ -136,28 +219,24 @@ export default function DownloadInterstitialPage() {
           Download again
         </button>
         {/*
-          Always-visible safety net, not just a fallback for a caught
-          error — the blob+programmatic-click approach above is a known
-          weak point on iOS Safari and in-app browsers (WhatsApp,
-          Instagram, Facebook), which can silently swallow a JS-triggered
-          download with no error to catch. This is a genuine top-level
-          <a href> navigation (no onClick, no preventDefault) straight to
-          the API route — the most broadly compatible download mechanism
-          across mobile/webview browsers, even where blob downloads fail
-          silently. It re-fetches from the server rather than reusing the
-          blob; that's an acceptable tradeoff for reliability here, and
-          the token's use-count already allows several redemptions.
+          Always-visible safety net for the standard (blob+fetch) path —
+          a genuine top-level <a href> navigation (no onClick, no
+          preventDefault) straight to the API route, the most broadly
+          compatible download mechanism there is. Re-fetches from the
+          server rather than reusing the blob; acceptable tradeoff for
+          reliability, and the token's use-count already allows several
+          redemptions.
         */}
-        <a
-          href={`/api/download/${token}`}
-          className="block mt-4 text-xs text-slate hover:text-ink transition-colors underline"
-        >
+        <a href={directUrl} className="block mt-4 text-xs text-slate hover:text-ink transition-colors underline">
           Download not starting? Tap here
         </a>
       </div>
     );
   }
 
+  // stage === "loading" — also covers the brief moment before
+  // `environment` resolves (see the comment on that state above); no
+  // fetch has fired yet in that case, so this is a safe default render.
   return (
     <div className="max-w-sm mx-auto px-4 py-16 sm:py-24 text-center">
       <div className="flex justify-center mb-5">
@@ -203,6 +282,16 @@ function DownloadIcon() {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="13" />
+      <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
     </svg>
   );
 }
