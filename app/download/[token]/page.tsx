@@ -135,6 +135,25 @@ export default function DownloadInterstitialPage() {
           <DownloadIcon />
           Download again
         </button>
+        {/*
+          Always-visible safety net, not just a fallback for a caught
+          error — the blob+programmatic-click approach above is a known
+          weak point on iOS Safari and in-app browsers (WhatsApp,
+          Instagram, Facebook), which can silently swallow a JS-triggered
+          download with no error to catch. This is a genuine top-level
+          <a href> navigation (no onClick, no preventDefault) straight to
+          the API route — the most broadly compatible download mechanism
+          across mobile/webview browsers, even where blob downloads fail
+          silently. It re-fetches from the server rather than reusing the
+          blob; that's an acceptable tradeoff for reliability here, and
+          the token's use-count already allows several redemptions.
+        */}
+        <a
+          href={`/api/download/${token}`}
+          className="block mt-4 text-xs text-slate hover:text-ink transition-colors underline"
+        >
+          Download not starting? Tap here
+        </a>
       </div>
     );
   }

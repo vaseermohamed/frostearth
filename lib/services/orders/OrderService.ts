@@ -6,7 +6,7 @@ import { v4 as uuid } from "uuid";
 import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
-const DOWNLOAD_TOKEN_MAX_USES = 50;
+const DOWNLOAD_TOKEN_MAX_USES = 20;
 /** Postgres int4 max — the ceiling for any value bound for an Int column (orderNumber here). */
 const POSTGRES_INT4_MAX = 2147483647;
 
