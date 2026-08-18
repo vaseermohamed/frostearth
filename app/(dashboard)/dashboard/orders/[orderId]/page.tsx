@@ -61,11 +61,24 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
 
       <div className="bg-white rounded-2xl border border-fog divide-y divide-fog mb-6">
         {order.items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-4">
-            <span className="text-sm text-ink break-words">{item.titleSnapshot}</span>
-            <span className="font-mono text-sm text-ink shrink-0">
-              ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}
-            </span>
+          <div key={item.id} className="px-5 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-ink break-words">{item.titleSnapshot}</span>
+              <span className="font-mono text-sm text-ink shrink-0">
+                ₹{(item.priceInPaiseSnapshot / 100).toLocaleString("en-IN")}
+              </span>
+            </div>
+            {order.status === "PAID" && (
+              <div className="mt-2 flex justify-end">
+                <a
+                  href={`/api/admin/orders/${order.id}/download-item/${item.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs rounded-full border border-fog px-3 py-1.5 text-ink hover:border-ink transition-colors"
+                >
+                  <DownloadIcon />
+                  Download PDF
+                </a>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -77,5 +90,15 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
         </span>
       </div>
     </div>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
   );
 }

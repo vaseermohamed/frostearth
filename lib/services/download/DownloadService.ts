@@ -28,11 +28,44 @@ export interface ResolvedDownload {
  * every download is a better trade than owning a storage-growth
  * problem.
  */
+interface WatermarkSourceProduct {
+  fileKey: string;
+  fileName: string;
+}
+
+interface WatermarkSourceOrder {
+  id: string;
+  orderNumber: number;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string | null;
+}
+
 export class DownloadService {
   private storage = getStorageService();
 
   async resolveDownload(token: string): Promise<ResolvedDownload> {
     const { product, order } = await getOrderService().redeemDownloadToken(token);
+    return this.generateWatermarkedDownload(product, order);
+  }
+
+  /**
+   * Creator-initiated download from the dashboard order detail page —
+   * same watermarked bytes a buyer would get (same data source, same
+   * traceability), but reached via an authenticated dashboard session
+   * instead of a DownloadToken. See
+   * OrderService.getItemForAdminDownload for why this never touches the
+   * buyer's own token/use-count.
+   */
+  async resolveAdminDownload(storeId: string, orderId: string, orderItemId: string): Promise<ResolvedDownload> {
+    const { product, order } = await getOrderService().getItemForAdminDownload(storeId, orderId, orderItemId);
+    return this.generateWatermarkedDownload(product, order);
+  }
+
+  private async generateWatermarkedDownload(
+    product: WatermarkSourceProduct,
+    order: WatermarkSourceOrder
+  ): Promise<ResolvedDownload> {
     const original = await this.storage.read(product.fileKey);
 
     let watermarked: Buffer;
@@ -46,7 +79,7 @@ export class DownloadService {
       });
     } catch (err) {
       console.error(`[download] watermarking failed for order ${order.id}:`, err);
-      throw new Error("We couldn't prepare your download right now — please try again in a moment");
+      throw new Error("We couldn't prepare this download right now — please try again in a moment");
     }
 
     return { buffer: watermarked, fileName: product.fileName };

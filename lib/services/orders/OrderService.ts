@@ -236,6 +236,38 @@ export class OrderService {
   }
 
   /**
+   * Creator-initiated lookup behind the dashboard's manual "Download
+   * PDF" action — a support tool for handing a struggling buyer their
+   * file directly (email/WhatsApp), not a buyer redemption. Scoped by
+   * storeId exactly like getForStore (ownership check), but deliberately
+   * does NOT touch DownloadToken at all: no expiry check, no usedCount
+   * increment, no token minted. The buyer's own token/use-count budget
+   * is completely unaffected by a creator doing this.
+   */
+  async getItemForAdminDownload(storeId: string, orderId: string, orderItemId: string) {
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, storeId },
+      include: { items: { include: { product: true } } },
+    });
+    if (!order) throw new Error("Order not found");
+    if (order.status !== "PAID") throw new Error("Order is not paid");
+
+    const item = order.items.find((i) => i.id === orderItemId);
+    if (!item) throw new Error("Item not found on this order");
+
+    return {
+      product: item.product,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        buyerName: order.buyerName,
+        buyerEmail: order.buyerEmail,
+        buyerPhone: order.buyerPhone,
+      },
+    };
+  }
+
+  /**
    * Reuses whatever download token already exists per item (minted once,
    * at payment-confirmation time in markPaidByRazorpayOrderId) instead of
    * minting a new one on every visit to the confirmation page — a page
