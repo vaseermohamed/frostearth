@@ -1,5 +1,20 @@
-import { PDFDocument, PDFDict, PDFName, PDFString, PDFRawStream, StandardFonts, rgb, degrees, PDFFont, PDFPage } from "pdf-lib";
+// @pdf-lib/fontkit's bundled complex-script shaping engine (used for
+// Indic scripts like Tamil/Devanagari, which need glyph reordering and
+// ligature substitution, unlike simple Latin text) was built assuming a
+// global `regeneratorRuntime` exists — Node.js doesn't provide one by
+// default. Without this import, embedding Tamil/Devanagari text throws
+// `ReferenceError: regeneratorRuntime is not defined` from deep inside
+// fontkit's shaping state machine. This is a known, documented gap (see
+// github.com/Hopding/pdf-lib issues #785 and #1419), not something
+// specific to this codebase — must be imported before fontkit's shaping
+// code ever runs, so it's first in this file.
+import "regenerator-runtime/runtime";
+import fs from "fs";
+import path from "path";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, PDFDict, PDFName, PDFString, PDFRawStream, rgb, degrees, PDFFont, PDFPage } from "pdf-lib";
 import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
+import { splitIntoScriptRuns, ScriptId } from "@/lib/services/watermark/scriptRuns";
 
 export interface WatermarkData {
   orderId: string;
@@ -8,6 +23,73 @@ export interface WatermarkData {
   buyerEmail: string;
   /** Nullable — historical orders placed before phone became mandatory at checkout have none on record. Omitted cleanly from every layer below when absent, never rendered as "null"/blank. */
   buyerPhone: string | null;
+}
+
+/**
+ * Pairs the pdf-lib PDFFont actually used for drawing with a raw
+ * fontkit font used ONLY to check glyph coverage ahead of time.
+ *
+ * This split exists because of a real, tested finding: unlike pdf-lib's
+ * built-in Standard 14 fonts (which throw a WinAnsi encoding error for
+ * an unrepresentable character), a custom embedded font does NOT throw
+ * when asked to draw/measure a character it has no glyph for — fontkit
+ * silently substitutes glyph 0 (".notdef", the standard TrueType/
+ * OpenType "missing glyph" placeholder, which renders as an empty box
+ * or nothing at all depending on the font). Confirmed by direct testing
+ * against these exact font files: `layout("A")` returns a real glyph
+ * ID, `layout("অ")` (Bengali) returns glyph ID 0. So coverage has to be
+ * checked explicitly before drawing — there's no exception to catch.
+ */
+interface ScriptFont {
+  pdfFont: PDFFont;
+  hasGlyph: (codePoint: number) => boolean;
+}
+
+type FontsByScript = Record<ScriptId, ScriptFont>;
+
+/**
+ * Font files bundled alongside this module (see ./fonts/OFL.txt — all
+ * three are Google's Noto Sans family, SIL Open Font License 1.1, free
+ * to embed in generated documents). Read from disk once per cold start
+ * and cached at module scope — the bytes never change, only the
+ * per-PDFDocument embedFont() call needs to happen fresh each time.
+ *
+ * Confirmed working under `next build`/`next dev`'s own bundling; not
+ * independently verified against Vercel's exact serverless file-tracing
+ * in a live deploy — worth a smoke test on first production download
+ * after this ships.
+ */
+const FONT_FILES: Record<ScriptId, string> = {
+  latin: "NotoSans-Regular.ttf",
+  tamil: "NotoSansTamil-Regular.ttf",
+  devanagari: "NotoSansDevanagari-Regular.ttf",
+};
+
+let cachedFontBytes: Record<ScriptId, Buffer> | null = null;
+
+function loadFontBytes(): Record<ScriptId, Buffer> {
+  if (cachedFontBytes) return cachedFontBytes;
+  const dir = path.join(process.cwd(), "lib", "services", "watermark", "fonts");
+  cachedFontBytes = {
+    latin: fs.readFileSync(path.join(dir, FONT_FILES.latin)),
+    tamil: fs.readFileSync(path.join(dir, FONT_FILES.tamil)),
+    devanagari: fs.readFileSync(path.join(dir, FONT_FILES.devanagari)),
+  };
+  return cachedFontBytes;
+}
+
+/**
+ * Embeds the font into this specific PDFDocument (subset — only glyphs
+ * actually used end up in the output, keeping generation time and file
+ * size down) AND creates a second, independent fontkit font instance
+ * purely for `hasGlyphForCodePoint` coverage checks. The two are
+ * separate objects because pdf-lib's embedded PDFFont doesn't expose
+ * that check itself.
+ */
+async function buildScriptFont(pdfDoc: PDFDocument, bytes: Buffer): Promise<ScriptFont> {
+  const pdfFont = await pdfDoc.embedFont(bytes, { subset: true });
+  const rawFont = fontkit.create(bytes);
+  return { pdfFont, hasGlyph: (codePoint: number) => rawFont.hasGlyphForCodePoint(codePoint) };
 }
 
 /**
@@ -24,6 +106,17 @@ export interface WatermarkData {
  *     surfaces) and an embedded XMP packet, so identification survives a
  *     crop or a "print to PDF" that strips the visible layer but not
  *     metadata.
+ *
+ * Text rendering is multi-script: buyer name/email/phone are free text
+ * with no charset restriction at checkout, and a name in Tamil or
+ * Devanagari script can't be drawn with a WinAnsi-encoded standard font
+ * (pdf-lib's Helvetica etc.) at all — it throws. Custom Noto Sans fonts
+ * are embedded instead, and mixed-script strings (e.g. an English word
+ * next to a Tamil word) are split into per-script runs and drawn with
+ * the matching font in sequence. Any script we haven't added a font for
+ * yet (Bengali, Telugu, ...) falls back to the Latin font and will still
+ * throw — a known, logged limitation (see prepareRuns), not silently
+ * pretending full coverage.
  */
 export async function applyWatermark(pdfBytes: Buffer, data: WatermarkData): Promise<Buffer> {
   // updateMetadata: false — by default pdf-lib stamps its own
@@ -32,22 +125,120 @@ export async function applyWatermark(pdfBytes: Buffer, data: WatermarkData): Pro
   // which would silently clobber the identity fields this function's
   // entire job is to set. Metadata below is written explicitly instead.
   const pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  pdfDoc.registerFontkit(fontkit);
+
+  const bytes = loadFontBytes();
+  const fonts: FontsByScript = {
+    latin: await buildScriptFont(pdfDoc, bytes.latin),
+    tamil: await buildScriptFont(pdfDoc, bytes.tamil),
+    devanagari: await buildScriptFont(pdfDoc, bytes.devanagari),
+  };
 
   const orderLabel = formatOrderNumber(data.orderNumber);
   const tileText = [data.buyerName, `Order ${orderLabel}`, data.buyerPhone].filter(Boolean).join(" · ");
   const footerText = [`Order ${orderLabel}`, data.buyerEmail, data.buyerPhone].filter(Boolean).join(" · ");
 
+  // Prepared (split + coverage-checked) once, not once per page — the
+  // tile/footer text is identical on every page, so there's no reason
+  // to re-validate the same string 2x per page across a multi-page PDF.
+  const tileRuns = prepareRuns(fonts, tileText);
+  const footerRuns = prepareRuns(fonts, footerText);
+
   for (const page of pdfDoc.getPages()) {
-    drawTiledWatermark(page, font, tileText);
-    drawFooter(page, font, footerText);
+    drawTiledWatermark(page, tileRuns);
+    drawFooter(page, footerRuns);
   }
 
+  // Metadata fields (Info dict + XMP) go through pdf-lib's own
+  // setAuthor/setSubject/setKeywords API and a raw UTF-8 XML stream —
+  // neither goes through the glyph/WinAnsi encoding path that drawText
+  // does, so Tamil/Devanagari text is safe here regardless of font
+  // embedding. Confirmed by testing (see investigation report), not
+  // just inferred from the API shape.
   writeInfoMetadata(pdfDoc, data, orderLabel);
   writeXmpMetadata(pdfDoc, data, orderLabel);
 
   const outBytes = await pdfDoc.save();
   return Buffer.from(outBytes);
+}
+
+interface PreparedRun {
+  font: PDFFont;
+  text: string;
+}
+
+/**
+ * Splits text into script runs (see scriptRuns.ts — everything outside
+ * Tamil/Devanagari is bucketed as "latin") and validates every
+ * character has a real glyph in its assigned font BEFORE anything is
+ * drawn. Checked once per unique string, not once per tile repetition
+ * or per page.
+ *
+ * A run whose script has no embedded font falls back to the Latin
+ * font. If even Noto Sans Latin's coverage doesn't include the
+ * character (a genuinely unhandled script like Bengali/Telugu, or an
+ * unusual symbol/emoji), this throws a specific error naming the exact
+ * character and logs a warning identifying the gap — a known,
+ * documented limitation, not silently rendered as an empty box.
+ */
+function prepareRuns(fonts: FontsByScript, text: string): PreparedRun[] {
+  const prepared: PreparedRun[] = [];
+
+  for (const run of splitIntoScriptRuns(text)) {
+    const { pdfFont, hasGlyph } = fonts[run.script];
+    for (const ch of run.text) {
+      if (!hasGlyph(ch.codePointAt(0)!)) {
+        const codePointHex = ch.codePointAt(0)!.toString(16).toUpperCase();
+        console.warn(
+          `[watermark] script coverage gap: character "${ch}" (U+${codePointHex}) in "${run.text}" was bucketed as ` +
+            `"${run.script}" but has no glyph in that font. Only Latin, Tamil, and Devanagari are currently ` +
+            `embedded — if this is happening often, it's worth adding another script's font.`
+        );
+        throw new Error(`Unsupported character in watermark text: "${ch}" (U+${codePointHex}, script: ${run.script})`);
+      }
+    }
+    prepared.push({ font: pdfFont, text: run.text });
+  }
+
+  return prepared;
+}
+
+/** Total width across however many runs a string split into — layout math (centering, tile spacing) before anything is actually drawn. */
+function widthOfRuns(runs: PreparedRun[], size: number): number {
+  return runs.reduce((sum, run) => sum + run.font.widthOfTextAtSize(run.text, size), 0);
+}
+
+/**
+ * Draws pre-validated runs in sequence starting at (x, y), advancing
+ * along the given rotation angle between runs so consecutive runs of
+ * different fonts stay on the same rotated baseline instead of
+ * drifting horizontally (plain horizontal advancement would be wrong
+ * for the rotated tile watermark). Returns the total width drawn.
+ */
+function drawRuns(
+  page: PDFPage,
+  runs: PreparedRun[],
+  opts: { x: number; y: number; size: number; color: ReturnType<typeof rgb>; opacity: number; rotateDegrees?: number }
+): number {
+  const angleRad = ((opts.rotateDegrees ?? 0) * Math.PI) / 180;
+  let advance = 0;
+
+  for (const run of runs) {
+    const runX = opts.x + advance * Math.cos(angleRad);
+    const runY = opts.y + advance * Math.sin(angleRad);
+    page.drawText(run.text, {
+      x: runX,
+      y: runY,
+      size: opts.size,
+      font: run.font,
+      color: opts.color,
+      opacity: opts.opacity,
+      ...(opts.rotateDegrees ? { rotate: degrees(opts.rotateDegrees) } : {}),
+    });
+    advance += run.font.widthOfTextAtSize(run.text, opts.size);
+  }
+
+  return advance;
 }
 
 /**
@@ -58,43 +249,28 @@ export async function applyWatermark(pdfBytes: Buffer, data: WatermarkData): Pro
  * page's own MediaBox for free, so there's no need to compute the exact
  * rotated bounding box, just draw well past it.
  */
-function drawTiledWatermark(page: PDFPage, font: PDFFont, text: string) {
+function drawTiledWatermark(page: PDFPage, runs: PreparedRun[]) {
   const { width, height } = page.getSize();
   const fontSize = 13;
-  const angle = degrees(35);
-  const textWidth = font.widthOfTextAtSize(text, fontSize);
+  const angleDegrees = 35;
+  const textWidth = widthOfRuns(runs, fontSize);
   const stepX = textWidth + 70;
   const stepY = 85;
   const diag = Math.sqrt(width * width + height * height);
 
   for (let y = -diag; y < diag; y += stepY) {
     for (let x = -diag; x < diag; x += stepX) {
-      page.drawText(text, {
-        x,
-        y,
-        size: fontSize,
-        font,
-        color: rgb(0.55, 0.55, 0.55),
-        opacity: 0.1,
-        rotate: angle,
-      });
+      drawRuns(page, runs, { x, y, size: fontSize, color: rgb(0.55, 0.55, 0.55), opacity: 0.1, rotateDegrees: angleDegrees });
     }
   }
 }
 
 /** A persistent, higher-contrast strip at the bottom of every page — the part meant to be read, not just detected. */
-function drawFooter(page: PDFPage, font: PDFFont, text: string) {
+function drawFooter(page: PDFPage, runs: PreparedRun[]) {
   const { width } = page.getSize();
   const fontSize = 8;
-  const textWidth = font.widthOfTextAtSize(text, fontSize);
-  page.drawText(text, {
-    x: Math.max(18, (width - textWidth) / 2),
-    y: 16,
-    size: fontSize,
-    font,
-    color: rgb(0.3, 0.3, 0.3),
-    opacity: 0.9,
-  });
+  const textWidth = widthOfRuns(runs, fontSize);
+  drawRuns(page, runs, { x: Math.max(18, (width - textWidth) / 2), y: 16, size: fontSize, color: rgb(0.3, 0.3, 0.3), opacity: 0.9 });
 }
 
 /**

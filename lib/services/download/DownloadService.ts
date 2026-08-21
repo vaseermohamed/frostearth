@@ -79,7 +79,7 @@ export class DownloadService {
       });
     } catch (err) {
       console.error(`[download] watermarking failed for order ${order.id}:`, err);
-      throw new Error("We couldn't prepare this download right now — please try again in a moment");
+      throw new Error("We couldn't prepare this download right now - please try again in a moment");
     }
 
     return { buffer: watermarked, fileName: product.fileName };
