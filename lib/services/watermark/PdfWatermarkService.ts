@@ -79,15 +79,25 @@ function loadFontBytes(): Record<ScriptId, Buffer> {
 }
 
 /**
- * Embeds the font into this specific PDFDocument (subset — only glyphs
- * actually used end up in the output, keeping generation time and file
- * size down) AND creates a second, independent fontkit font instance
- * purely for `hasGlyphForCodePoint` coverage checks. The two are
- * separate objects because pdf-lib's embedded PDFFont doesn't expose
- * that check itself.
+ * Embeds the font into this specific PDFDocument AND creates a second,
+ * independent fontkit font instance purely for `hasGlyphForCodePoint`
+ * coverage checks (pdf-lib's embedded PDFFont doesn't expose that check
+ * itself).
+ *
+ * Deliberately NOT using `{ subset: true }`. That was the original plan
+ * (smaller output, faster save) but it's a real, confirmed bug with
+ * this specific Noto Sans font: subsetting silently drops glyphs from
+ * the output — e.g. embedding "Karthik Selvam" subsetted rendered as
+ * "a hik Selva" (K, r, t, and the trailing m all missing), reproduced
+ * with pdf-lib's own single-embed/single-draw call pattern, with
+ * subsetting the only variable changed. This caused the production
+ * regression where even plain-English orders' watermarks were garbled
+ * — see the investigation history for the full isolation. Embedding
+ * the full font is slower and larger but correct; see applyWatermark's
+ * docstring for the measured cost.
  */
 async function buildScriptFont(pdfDoc: PDFDocument, bytes: Buffer): Promise<ScriptFont> {
-  const pdfFont = await pdfDoc.embedFont(bytes, { subset: true });
+  const pdfFont = await pdfDoc.embedFont(bytes, { subset: false });
   const rawFont = fontkit.create(bytes);
   return { pdfFont, hasGlyph: (codePoint: number) => rawFont.hasGlyphForCodePoint(codePoint) };
 }
