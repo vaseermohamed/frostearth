@@ -164,6 +164,13 @@ export default function CartCheckout({
         onChange={(e) => setPhone(e.target.value)}
         className="w-full rounded-full border border-fog px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-frost"
       />
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p className="text-xs text-amber-900">
+          <span aria-hidden="true">⚠</span> Notes are delivered <span className="font-semibold">ONLY via email</span> —
+          please double-check your email address before paying. We cannot resend to a different address if this one
+          is wrong.
+        </p>
+      </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <button
         onClick={handlePay}

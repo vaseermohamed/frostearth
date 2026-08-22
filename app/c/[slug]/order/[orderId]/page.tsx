@@ -51,8 +51,6 @@ export default async function OrderConfirmationPage({
     );
   }
 
-  const downloads = await getOrderService().getOrIssueDownloadTokens(order);
-
   return (
     <div className="max-w-lg mx-auto px-4 py-12 sm:py-16">
       <div className="flex justify-center mb-6">
@@ -66,32 +64,38 @@ export default async function OrderConfirmationPage({
         <p className="font-mono text-sm text-slate">Order #{formatOrderNumber(order.orderNumber)}</p>
       </div>
 
-      <div className="space-y-4 mb-6">
-        {downloads.map((d) => (
-          <div key={d.token} className="bg-white rounded-2xl border border-fog p-5">
-            <div className="flex items-center gap-3 mb-4">
+      <div className="bg-white rounded-2xl border border-fog p-5 mb-6">
+        <div className="space-y-3 mb-4">
+          {order.items.map((item) => (
+            <div key={item.id} className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-fog flex items-center justify-center shrink-0 text-slate">
                 <FileIcon />
               </div>
-              <p className="text-sm font-medium text-ink break-words">{d.title}</p>
+              <p className="text-sm font-medium text-ink break-words">{item.titleSnapshot}</p>
             </div>
-            <a
-              href={`/download/${d.token}`}
-              className="flex items-center justify-center gap-2 w-full rounded-full bg-ink hover:bg-ink/85 transition-colors text-white text-sm font-medium px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-frost focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-            >
-              <DownloadIcon />
-              Download
-            </a>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-fog">
+          <span className="text-sm text-slate">Amount paid</span>
+          <span className="font-mono text-sm text-ink">₹{(order.amountInPaise / 100).toLocaleString("en-IN")}</span>
+        </div>
       </div>
 
-      <p className="text-sm text-slate text-center mb-1">
-        These links are also in your email and stay valid for 3 days.
-      </p>
-      <p className="text-xs text-slate text-center mb-8">
-        For best results, open this link in Safari or Chrome rather than inside an app like Instagram or WhatsApp.
-      </p>
+      <div className="bg-frost/5 rounded-2xl border border-frost/20 p-5 mb-8 text-center">
+        <p className="text-sm text-ink mb-1">
+          Your files are being emailed to <span className="font-medium">{order.buyerEmail}</span>.
+        </p>
+        <p className="text-sm text-slate">
+          Delivery is usually instant — check your inbox (and spam folder) in a few minutes.
+        </p>
+        <p className="text-sm text-slate mt-3">
+          Didn&apos;t receive it? Contact us at{" "}
+          <a href="mailto:hello@frostearth.in" className="text-ink underline">
+            hello@frostearth.in
+          </a>{" "}
+          with your order number.
+        </p>
+      </div>
 
       <div className="text-center">
         <Link href="/" className="text-sm text-ink underline">
@@ -177,12 +181,3 @@ function FileIcon() {
   );
 }
 
-function DownloadIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
