@@ -57,20 +57,21 @@ model Product {
 }
 
 model Order {
-  id                String      @id @default(cuid())
+  id                String          @id @default(cuid())
   storeId           String
   buyerEmail        String
   buyerPhone        String?
   buyerName         String
-  orderNumber       Int         @unique @default(autoincrement())
+  orderNumber       Int             @unique @default(autoincrement())
   amountInPaise     Int
-  status            OrderStatus @default(PENDING)
-  razorpayOrderId   String      @unique
+  status            OrderStatus     @default(PENDING)
+  razorpayOrderId   String          @unique
   razorpayPaymentId String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   items             OrderItem[]
-  store             Store       @relation(fields: [storeId], references: [id])
+  emailDeliveries   EmailDelivery[]
+  store             Store           @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
   @@index([buyerEmail])
@@ -104,6 +105,36 @@ model DownloadToken {
 
   @@index([orderItemId])
   @@map("download_tokens")
+}
+
+/// A full audit trail of every download-link email attempt for an order —
+/// the original checkout send is issued directly by OrderService and never
+/// recorded here (see markPaidByRazorpayOrderId); every row in this table
+/// comes from an admin-initiated resend, which is why sentToEmail can
+/// differ from Order.buyerEmail. That field is never modified by a
+/// resend — it stays exactly as submitted at checkout, for search/exports/
+/// identification.
+model EmailDelivery {
+  id          String          @id @default(cuid())
+  orderId     String
+  sentToEmail String
+  sentAt      DateTime        @default(now())
+  status      DeliveryStatus
+  triggeredBy DeliveryTrigger
+  order       Order           @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("email_deliveries")
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+}
+
+enum DeliveryTrigger {
+  CHECKOUT
+  ADMIN_RESEND
 }
 
 enum DomainType {

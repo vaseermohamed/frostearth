@@ -24,3 +24,8 @@ export const verifyCheckoutSchema = z.object({
   razorpay_signature: z.string().min(1),
 });
 export type VerifyCheckoutInput = z.infer<typeof verifyCheckoutSchema>;
+
+export const resendDownloadEmailSchema = z.object({
+  email: z.string().email().max(254),
+});
+export type ResendDownloadEmailInput = z.infer<typeof resendDownloadEmailSchema>;

@@ -24,7 +24,7 @@ export class BrevoEmailService implements EmailService {
     this.senderEmail = email;
   }
 
-  async send(input: SendEmailInput): Promise<void> {
+  async send(input: SendEmailInput): Promise<boolean> {
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -45,7 +45,9 @@ export class BrevoEmailService implements EmailService {
       // (see OrderService.sendReceiptEmail), same as ResendEmailService.
       const body = await res.text().catch(() => "");
       console.error("[email:brevo] send failed:", res.status, body);
+      return false;
     }
+    return true;
   }
 }
 

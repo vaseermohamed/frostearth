@@ -16,7 +16,7 @@ export class ResendEmailService implements EmailService {
     this.from = process.env.EMAIL_FROM || "FrostEarth <onboarding@resend.dev>";
   }
 
-  async send(input: SendEmailInput): Promise<void> {
+  async send(input: SendEmailInput): Promise<boolean> {
     const result = await this.client.emails.send({
       from: this.from,
       to: input.to,
@@ -27,6 +27,8 @@ export class ResendEmailService implements EmailService {
       // Don't let an email failure fail the checkout itself — the buyer
       // already has their download link on-screen. Log for follow-up.
       console.error("[email:resend] send failed:", JSON.stringify(result.error));
+      return false;
     }
+    return true;
   }
 }

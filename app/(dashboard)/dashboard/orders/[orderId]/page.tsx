@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { formatOrderNumber, formatIstDateTime } from "@/lib/services/orders/orderFilters";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
+import ResendEmailForm from "@/components/dashboard/ResendEmailForm";
 
 /**
  * Creator-only, full-detail view of a single order — separate from the
@@ -21,6 +22,8 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
   const session = await getSession();
   const order = await getOrderService().getForStore(session!.storeId, params.orderId);
   if (!order) notFound();
+
+  const deliveries = order.status === "PAID" ? await getOrderService().getEmailDeliveriesForOrder(order.id) : [];
 
   return (
     <div>
@@ -83,12 +86,46 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-fog p-5 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-fog p-5 flex items-center justify-between mb-6">
         <span className="font-medium text-ink">Total</span>
         <span className="font-mono font-bold text-lg text-ink">
           ₹{(order.amountInPaise / 100).toLocaleString("en-IN")}
         </span>
       </div>
+
+      {order.status === "PAID" && (
+        <div className="bg-white rounded-2xl border border-fog p-6">
+          <h2 className="font-medium text-ink mb-1">Resend download links</h2>
+          <p className="text-sm text-slate mb-4">
+            Buyer's own email stays <span className="font-medium text-ink">{order.buyerEmail}</span> — this only
+            sends an extra copy somewhere else (e.g. if their email was mistyped at checkout).
+          </p>
+          <ResendEmailForm orderId={order.id} />
+
+          {deliveries.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-fog">
+              <p className="text-xs font-medium text-slate mb-2">Delivery history</p>
+              <div className="divide-y divide-fog">
+                {deliveries.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="text-ink break-words">{d.sentToEmail}</p>
+                      <p className="text-xs text-slate">{formatIstDateTime(d.sentAt)}</p>
+                    </div>
+                    <span
+                      className={`text-xs font-medium shrink-0 rounded-full px-2 py-0.5 ${
+                        d.status === "SENT" ? "bg-frost/10 text-frost" : "bg-red-50 text-red-600"
+                      }`}
+                    >
+                      {d.status === "SENT" ? "Sent" : "Failed"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

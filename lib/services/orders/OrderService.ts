@@ -170,17 +170,45 @@ export class OrderService {
         const dt = await this.issueDownloadToken(item.id);
         tokens.push({ title: item.titleSnapshot, token: dt.token });
       }
-      await this.sendReceiptEmail(updated.buyerEmail, updated.buyerName, updated.orderNumber, updated.createdAt, tokens);
+      const sent = await this.sendReceiptEmail(updated.buyerEmail, updated.buyerName, updated.orderNumber, updated.createdAt, tokens);
+      await this.recordEmailDelivery(updated.id, updated.buyerEmail, sent, "CHECKOUT");
     }
 
     return updated;
   }
 
   /**
+   * Best-effort audit-log write, same spirit as sendReceiptEmail itself:
+   * a logging failure (e.g. a transient DB hiccup) must never fail the
+   * checkout/payment-confirmation flow that's already proven working in
+   * production — swallow and log, don't rethrow.
+   */
+  private async recordEmailDelivery(
+    orderId: string,
+    sentToEmail: string,
+    sent: boolean,
+    triggeredBy: "CHECKOUT" | "ADMIN_RESEND"
+  ) {
+    try {
+      await prisma.emailDelivery.create({
+        data: { orderId, sentToEmail, status: sent ? "SENT" : "FAILED", triggeredBy },
+      });
+    } catch (err) {
+      console.error("[order] recordEmailDelivery failed:", err);
+    }
+  }
+
+  /**
    * Best-effort — a failed email must never fail the checkout itself,
    * since the buyer already has working download links on-screen from
-   * the client-confirmation path. EmailService swallows its own errors
-   * (see ResendEmailService) for the same reason.
+   * the client-confirmation path. EmailService itself never throws for a
+   * provider-reported failure (see ResendEmailService/BrevoEmailService)
+   * for the same reason; the try/catch here only guards against something
+   * more fundamental going wrong (e.g. a provider misconfigured badly
+   * enough to throw before making the request). Returns whether the send
+   * actually succeeded — markPaidByRazorpayOrderId ignores it (checkout
+   * must never fail on this), but resendDownloadEmail needs it to record
+   * an accurate EmailDelivery status.
    */
   private async sendReceiptEmail(
     to: string,
@@ -188,17 +216,18 @@ export class OrderService {
     orderNumber: number,
     orderDate: Date,
     tokens: { title: string; token: string }[]
-  ) {
+  ): Promise<boolean> {
     const formattedOrderNumber = formatOrderNumber(orderNumber);
 
     try {
-      await this.email.send({
+      return await this.email.send({
         to,
         subject: `Order ${formattedOrderNumber} — your FrostEarth download links`,
         html: buildReceiptEmailHtml({ buyerName, orderNumber, orderDate, tokens }),
       });
     } catch (err) {
       console.error("[order] sendReceiptEmail failed:", err);
+      return false;
     }
   }
 
@@ -219,6 +248,68 @@ export class OrderService {
       where: { orderItem: { orderId } },
       include: { orderItem: true },
       orderBy: { createdAt: "asc" },
+    });
+  }
+
+  /**
+   * Like getOrIssueDownloadTokens, but for an admin resend rather than
+   * the buyer's own immediate post-checkout page — reuses a per-item
+   * token only if it's still genuinely usable (same expiry + use-count
+   * definition of "valid" that redeemDownloadToken enforces at redemption
+   * time), not just "any token exists". An item whose only tokens are all
+   * expired/exhausted gets a fresh one instead of handing out a link that
+   * would fail the moment the recipient clicked it.
+   */
+  async getOrIssueValidDownloadTokens(order: { id: string; items: { id: string; titleSnapshot: string }[] }) {
+    const existing = await this.getDownloadTokensForOrder(order.id);
+    const now = new Date();
+
+    const results: { title: string; token: string }[] = [];
+    for (const item of order.items) {
+      const valid = existing.find(
+        (t) => t.orderItemId === item.id && t.expiresAt > now && t.usedCount < DOWNLOAD_TOKEN_MAX_USES
+      );
+      const token = valid ?? (await this.issueDownloadToken(item.id));
+      results.push({ title: item.titleSnapshot, token: token.token });
+    }
+    return results;
+  }
+
+  /**
+   * Admin-initiated resend of an order's download links to a possibly
+   * different address than Order.buyerEmail — that field is deliberately
+   * never touched here, it stays exactly as submitted at checkout (search/
+   * exports/identification rely on it). Every attempt, success or
+   * failure, is recorded in EmailDelivery so the dashboard has a full
+   * audit trail instead of a creator wondering "did I already resend
+   * this, and to which address?"
+   */
+  async resendDownloadEmail(storeId: string, orderId: string, targetEmail: string) {
+    const order = await this.getForStore(storeId, orderId);
+    if (!order) throw new Error("Order not found");
+    if (order.status !== "PAID") throw new Error("Order is not paid");
+
+    const tokens = await this.getOrIssueValidDownloadTokens(order);
+    const sent = await this.sendReceiptEmail(targetEmail, order.buyerName, order.orderNumber, order.createdAt, tokens);
+
+    await prisma.emailDelivery.create({
+      data: {
+        orderId: order.id,
+        sentToEmail: targetEmail,
+        status: sent ? "SENT" : "FAILED",
+        triggeredBy: "ADMIN_RESEND",
+      },
+    });
+
+    if (!sent) throw new Error("Email could not be sent. Try again in a moment.");
+    return { sentTo: targetEmail };
+  }
+
+  /** Full delivery history for one order's dashboard detail page — every admin resend attempt, newest first. */
+  async getEmailDeliveriesForOrder(orderId: string) {
+    return prisma.emailDelivery.findMany({
+      where: { orderId },
+      orderBy: { sentAt: "desc" },
     });
   }
 
