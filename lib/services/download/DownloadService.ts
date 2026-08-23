@@ -45,8 +45,8 @@ export class DownloadService {
   private storage = getStorageService();
 
   async resolveDownload(token: string): Promise<ResolvedDownload> {
-    const { product, order } = await getOrderService().redeemDownloadToken(token);
-    return this.generateWatermarkedDownload(product, order);
+    const { product, order, priceInPaiseSnapshot } = await getOrderService().redeemDownloadToken(token);
+    return this.generateWatermarkedDownload(product, order, priceInPaiseSnapshot);
   }
 
   /**
@@ -58,25 +58,41 @@ export class DownloadService {
    * buyer's own token/use-count.
    */
   async resolveAdminDownload(storeId: string, orderId: string, orderItemId: string): Promise<ResolvedDownload> {
-    const { product, order } = await getOrderService().getItemForAdminDownload(storeId, orderId, orderItemId);
-    return this.generateWatermarkedDownload(product, order);
+    const { product, order, priceInPaiseSnapshot } = await getOrderService().getItemForAdminDownload(
+      storeId,
+      orderId,
+      orderItemId
+    );
+    return this.generateWatermarkedDownload(product, order, priceInPaiseSnapshot);
   }
 
   private async generateWatermarkedDownload(
     product: WatermarkSourceProduct,
-    order: WatermarkSourceOrder
+    order: WatermarkSourceOrder,
+    priceInPaiseSnapshot: number
   ): Promise<ResolvedDownload> {
     const original = await this.storage.read(product.fileKey);
 
+    // A ₹0 item at time of purchase skips the visible tile/footer but
+    // still gets full metadata identification — see applyWatermark. This
+    // is per-ITEM, not per-order: a mixed cart's paid item still gets
+    // the full visible mark even though the order as a whole included a
+    // free one.
+    const isFree = priceInPaiseSnapshot === 0;
+
     let watermarked: Buffer;
     try {
-      watermarked = await applyWatermark(original, {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        buyerName: order.buyerName,
-        buyerEmail: order.buyerEmail,
-        buyerPhone: order.buyerPhone,
-      });
+      watermarked = await applyWatermark(
+        original,
+        {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          buyerName: order.buyerName,
+          buyerEmail: order.buyerEmail,
+          buyerPhone: order.buyerPhone,
+        },
+        { isFree }
+      );
     } catch (err) {
       console.error(`[download] watermarking failed for order ${order.id}:`, err);
       throw new Error("We couldn't prepare this download right now - please try again in a moment");

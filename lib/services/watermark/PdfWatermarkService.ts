@@ -128,35 +128,49 @@ async function buildScriptFont(pdfDoc: PDFDocument, bytes: Buffer): Promise<Scri
  * throw — a known, logged limitation (see prepareRuns), not silently
  * pretending full coverage.
  */
-export async function applyWatermark(pdfBytes: Buffer, data: WatermarkData): Promise<Buffer> {
+export async function applyWatermark(
+  pdfBytes: Buffer,
+  data: WatermarkData,
+  opts: { isFree: boolean } = { isFree: false }
+): Promise<Buffer> {
   // updateMetadata: false — by default pdf-lib stamps its own
   // Producer/Creator/ModDate at load time (and again on every later
   // load, including whatever tool a buyer or we open the result with),
   // which would silently clobber the identity fields this function's
   // entire job is to set. Metadata below is written explicitly instead.
   const pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
-  pdfDoc.registerFontkit(fontkit);
-
-  const bytes = loadFontBytes();
-  const fonts: FontsByScript = {
-    latin: await buildScriptFont(pdfDoc, bytes.latin),
-    tamil: await buildScriptFont(pdfDoc, bytes.tamil),
-    devanagari: await buildScriptFont(pdfDoc, bytes.devanagari),
-  };
-
   const orderLabel = formatOrderNumber(data.orderNumber);
-  const tileText = [data.buyerName, `Order ${orderLabel}`, data.buyerPhone].filter(Boolean).join(" · ");
-  const footerText = [`Order ${orderLabel}`, data.buyerEmail, data.buyerPhone].filter(Boolean).join(" · ");
 
-  // Prepared (split + coverage-checked) once, not once per page — the
-  // tile/footer text is identical on every page, so there's no reason
-  // to re-validate the same string 2x per page across a multi-page PDF.
-  const tileRuns = prepareRuns(fonts, tileText);
-  const footerRuns = prepareRuns(fonts, footerText);
+  // A free item (opts.isFree — derived by the caller from the order
+  // item's priceInPaiseSnapshot, never a stored flag) skips the visible
+  // layer entirely: no tile, no footer, and none of the font embedding
+  // that exists only to draw them. Metadata identification below is
+  // NOT inside this branch — it runs unconditionally for every
+  // download, free or paid, since that's the identification layer that
+  // has to survive regardless of price.
+  if (!opts.isFree) {
+    pdfDoc.registerFontkit(fontkit);
 
-  for (const page of pdfDoc.getPages()) {
-    drawTiledWatermark(page, tileRuns);
-    drawFooter(page, footerRuns);
+    const bytes = loadFontBytes();
+    const fonts: FontsByScript = {
+      latin: await buildScriptFont(pdfDoc, bytes.latin),
+      tamil: await buildScriptFont(pdfDoc, bytes.tamil),
+      devanagari: await buildScriptFont(pdfDoc, bytes.devanagari),
+    };
+
+    const tileText = [data.buyerName, `Order ${orderLabel}`, data.buyerPhone].filter(Boolean).join(" · ");
+    const footerText = [`Order ${orderLabel}`, data.buyerEmail, data.buyerPhone].filter(Boolean).join(" · ");
+
+    // Prepared (split + coverage-checked) once, not once per page — the
+    // tile/footer text is identical on every page, so there's no reason
+    // to re-validate the same string 2x per page across a multi-page PDF.
+    const tileRuns = prepareRuns(fonts, tileText);
+    const footerRuns = prepareRuns(fonts, footerText);
+
+    for (const page of pdfDoc.getPages()) {
+      drawTiledWatermark(page, tileRuns);
+      drawFooter(page, footerRuns);
+    }
   }
 
   // Metadata fields (Info dict + XMP) go through pdf-lib's own

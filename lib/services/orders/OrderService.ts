@@ -406,6 +406,9 @@ export class OrderService {
         buyerEmail: order.buyerEmail,
         buyerPhone: order.buyerPhone,
       },
+      // Same reasoning as redeemDownloadToken: the item's snapshotted
+      // sale price, not the product's current listed price.
+      priceInPaiseSnapshot: item.priceInPaiseSnapshot,
     };
   }
 
@@ -518,6 +521,12 @@ export class OrderService {
         buyerEmail: order.buyerEmail,
         buyerPhone: order.buyerPhone,
       },
+      // The item's snapshotted sale price, not product.priceInPaise (the
+      // product's CURRENT listed price, which can change after the sale)
+      // — DownloadService uses this to decide whether this specific
+      // download gets the visible watermark, and it has to reflect what
+      // was actually paid for THIS order, not what the product costs now.
+      priceInPaiseSnapshot: record.orderItem.priceInPaiseSnapshot,
     };
   }
 
