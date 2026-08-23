@@ -78,6 +78,30 @@ export function toIst(date: Date): Date {
   return new Date(date.getTime() + IST_OFFSET_MS);
 }
 
+/**
+ * Parses a "YYYY-MM-DDTHH:mm" value from an <input type="datetime-local">
+ * — the countdown admin form's targetDateTime field — as IST wall-clock
+ * time (the creator's own timezone), same convention as parseIstDate,
+ * just carrying a time-of-day component too.
+ */
+export function parseIstDateTimeLocal(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const naiveUtc = new Date(`${value}:00.000Z`);
+  if (isNaN(naiveUtc.getTime())) return undefined;
+  return new Date(naiveUtc.getTime() - IST_OFFSET_MS);
+}
+
+/** Inverse of parseIstDateTimeLocal — formats a stored UTC instant back into the "YYYY-MM-DDTHH:mm" shape a datetime-local input's defaultValue expects, as IST wall-clock time. */
+export function formatIstDateTimeLocalInput(date: Date): string {
+  const ist = toIst(date);
+  const yyyy = ist.getUTCFullYear();
+  const mm = String(ist.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(ist.getUTCDate()).padStart(2, "0");
+  const hh = String(ist.getUTCHours()).padStart(2, "0");
+  const min = String(ist.getUTCMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
 /** "05 Aug 2026, 2:34 PM" — same IST conversion as parseOrderFilters/the CSV export, just a friendlier on-screen format. */
 export function formatIstDateTime(date: Date): string {
   const ist = toIst(date);

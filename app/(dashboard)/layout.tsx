@@ -19,6 +19,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/dashboard/products" className="text-slate hover:text-ink transition-colors">Products</Link>
             <Link href="/dashboard/products/archive" className="text-slate hover:text-ink transition-colors">Archive</Link>
             <Link href="/dashboard/orders" className="text-slate hover:text-ink transition-colors">Orders</Link>
+            <Link href="/dashboard/countdowns" className="text-slate hover:text-ink transition-colors">Countdowns</Link>
+            <Link href="/dashboard/notices" className="text-slate hover:text-ink transition-colors">Notices</Link>
             <Link href="/dashboard/settings" className="text-slate hover:text-ink transition-colors">Settings</Link>
             <LogoutButton />
           </nav>

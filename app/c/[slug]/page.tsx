@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductService } from "@/lib/services/products/ProductService";
+import { getCountdownService } from "@/lib/services/countdowns/CountdownService";
+import { getNoticeService } from "@/lib/services/notices/NoticeService";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
 import QuickAddButton from "@/components/QuickAddButton";
+import CountdownCarousel from "@/components/CountdownCarousel";
+import NoticeBoard from "@/components/NoticeBoard";
+import QuizTeaserCard from "@/components/QuizTeaserCard";
 
 export default async function StorefrontPage({ params }: { params: { slug: string } }) {
   const { store, products } = await getProductService().listPublishedByStoreSlug(params.slug);
   if (!store) notFound();
+
+  const [countdowns, notices] = await Promise.all([
+    getCountdownService().listActiveForStorefront(store.id),
+    getNoticeService().listActiveForStorefront(store.id),
+  ]);
+  const now = Date.now();
 
   const recent = products.slice(0, 3);
 
@@ -64,6 +75,16 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
         </div>
       </section>
 
+      <CountdownCarousel
+        items={countdowns.map((c) => ({
+          id: c.id,
+          examName: c.examName,
+          label: c.label,
+          targetTime: c.targetDateTime.getTime(),
+        }))}
+        now={now}
+      />
+
       <section id="products" className="max-w-6xl mx-auto px-4 pb-20 scroll-mt-20">
         {products.length === 0 ? (
           <p className="text-slate">No products published yet.</p>
@@ -102,6 +123,10 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
           </div>
         )}
       </section>
+
+      <NoticeBoard notices={notices.map((n) => ({ id: n.id, title: n.title, publishedDate: n.publishedDate }))} />
+
+      <QuizTeaserCard />
     </div>
   );
 }

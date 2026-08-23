@@ -8,16 +8,18 @@ datasource db {
 }
 
 model Store {
-  id           String     @id @default(cuid())
-  name         String
-  slug         String     @unique
-  domainType   DomainType @default(FREE)
-  customDomain String?    @unique
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  orders       Order[]
-  products     Product[]
-  users        User[]
+  id              String          @id @default(cuid())
+  name            String
+  slug            String          @unique
+  domainType      DomainType      @default(FREE)
+  customDomain    String?         @unique
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  orders          Order[]
+  products        Product[]
+  users           User[]
+  examCountdowns  ExamCountdown[]
+  notices         Notice[]
 
   @@map("stores")
 }
@@ -135,6 +137,47 @@ enum DeliveryStatus {
 enum DeliveryTrigger {
   CHECKOUT
   ADMIN_RESEND
+}
+
+/// Homepage countdown carousel entries — all manually entered by the
+/// creator via /dashboard/countdowns, never scraped or pulled from an
+/// external exam-calendar API. isActive is a manual on/off switch
+/// independent of targetDateTime; the storefront additionally hides any
+/// row whose targetDateTime has already passed, so a creator forgetting
+/// to deactivate an old one doesn't show a negative countdown.
+model ExamCountdown {
+  id             String   @id @default(cuid())
+  storeId        String
+  examName       String
+  label          String
+  targetDateTime DateTime
+  isActive       Boolean  @default(true)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  store          Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+  @@map("exam_countdowns")
+}
+
+/// Homepage notice board entries — manually entered by the creator via
+/// /dashboard/notices. publishedDate is the date shown to visitors
+/// (e.g. backdated to when an announcement was actually made elsewhere),
+/// deliberately separate from createdAt (when the row was added here).
+model Notice {
+  id            String   @id @default(cuid())
+  storeId       String
+  title         String
+  publishedDate DateTime
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+  @@map("notices")
 }
 
 enum DomainType {
