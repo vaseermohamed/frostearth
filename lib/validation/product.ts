@@ -34,7 +34,7 @@ export const createProductSchema = z.object({
   title: z.string().min(3).max(200),
   subjectCode: subjectCodeSchema,
   description: z.string().min(1).max(5000),
-  priceInPaise: z.coerce.number().int().min(100).max(MAX_PRICE_IN_PAISE), // min ₹1
+  priceInPaise: z.coerce.number().int().min(0).max(MAX_PRICE_IN_PAISE), // ₹0 is a valid, deliberate "free product" price
 });
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 
@@ -42,7 +42,7 @@ export const updateProductSchema = z.object({
   title: z.string().min(3).max(200).optional(),
   subjectCode: subjectCodeSchema,
   description: z.string().min(1).max(5000).optional(),
-  priceInPaise: z.coerce.number().int().min(100).max(MAX_PRICE_IN_PAISE).optional(),
+  priceInPaise: z.coerce.number().int().min(0).max(MAX_PRICE_IN_PAISE).optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
 });
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

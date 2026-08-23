@@ -9,7 +9,7 @@ export interface CountdownItem {
   targetTime: number; // epoch ms — Date objects don't cross the server/client boundary as component props, so the server page passes this instead
 }
 
-const ROTATE_MS = 5000;
+const ROTATE_MS = 15000;
 
 function remainingParts(targetTime: number, now: number) {
   const diffMs = Math.max(0, targetTime - now);
@@ -50,15 +50,21 @@ export default function CountdownCarousel({ items, now }: { items: CountdownItem
 
   return (
     <section className="bg-ink">
-      <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16 text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-fog/60 mb-2">{active.examName}</p>
-        <p className="text-sm text-fog/80 mb-5">{active.label}</p>
-        <p className="font-mono text-4xl sm:text-5xl font-bold text-paper tabular-nums">
-          {days}d {hours}h {minutes}m
-        </p>
+      <div className="max-w-6xl mx-auto px-4 py-3 sm:py-3.5 text-center">
+        <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
+          <span className="font-mono text-[11px] sm:text-xs uppercase tracking-widest text-fog/60">
+            {active.examName}
+          </span>
+          <span className="text-fog/40">·</span>
+          <span className="text-xs sm:text-sm text-fog/80">{active.label}</span>
+          <span className="text-fog/40">·</span>
+          <span className="font-mono text-lg sm:text-2xl font-bold text-paper tabular-nums">
+            {days}d {hours}h {minutes}m
+          </span>
+        </div>
 
         {items.length > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex items-center justify-center gap-2 mt-4">
             {items.map((item, i) => (
               <button
                 key={item.id}

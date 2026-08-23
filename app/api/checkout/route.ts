@@ -22,6 +22,12 @@ export async function POST(req: NextRequest) {
       razorpayOrderId: order.razorpayOrderId,
       amountInPaise: order.amountInPaise,
       keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      // "PAID" here means a ₹0 cart — createPendingOrder already skipped
+      // Razorpay and finalized it. The client branches on this instead of
+      // recomputing the cart total itself, so the server's authoritative
+      // amount always decides, never the client's own (possibly stale)
+      // number.
+      status: order.status,
     });
   } catch (err: any) {
     console.error("[checkout] createPendingOrder failed:", JSON.stringify(err, null, 2));

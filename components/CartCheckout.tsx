@@ -66,13 +66,6 @@ export default function CartCheckout({
 
     setStatus("processing");
 
-    const scriptLoaded = await loadRazorpayScript();
-    if (!scriptLoaded) {
-      setStatus("idle");
-      setError("Could not load payment gateway. Check your connection.");
-      return;
-    }
-
     const createRes = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -87,6 +80,24 @@ export default function CartCheckout({
     if (!createRes.ok) {
       setStatus("idle");
       setError(typeof created.error === "string" ? created.error : "Could not start checkout");
+      return;
+    }
+
+    // A ₹0 cart is finalized as PAID directly by the server — no
+    // Razorpay order ever existed for it, so there's nothing to open a
+    // payment modal for. Skip straight to the confirmation page, exactly
+    // like the normal post-payment success path below does.
+    if (created.status === "PAID") {
+      setStatus("idle");
+      clear();
+      router.push(`/c/${slug}/order/${created.orderId}`);
+      return;
+    }
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      setStatus("idle");
+      setError("Could not load payment gateway. Check your connection.");
       return;
     }
 

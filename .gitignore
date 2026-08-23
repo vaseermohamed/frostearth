@@ -3,6 +3,7 @@ node_modules
 .env
 .env.local
 .env.*.local
+.env.local.dev
 storage/products/*
 storage/covers/*
 !storage/products/.gitkeep

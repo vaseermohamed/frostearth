@@ -94,7 +94,7 @@ export default function NewProductPage() {
           <input
             name="priceInPaiseRupees"
             type="number"
-            min={1}
+            min={0}
             step="1"
             required
             className="w-full rounded-md border border-fog px-3 py-2"
@@ -104,6 +104,7 @@ export default function NewProductPage() {
             }}
           />
           <input type="hidden" name="priceInPaise" />
+          <p className="text-xs text-slate mt-1">Enter 0 to make this a free product.</p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">PDF file</label>

@@ -16,6 +16,11 @@ PDF upload, public product pages, Razorpay UPI checkout, and secure post-payment
 
 ## Setup
 
+> Setting up a local dev environment isolated from production data
+> (separate Neon dev database, local file storage, no real emails)?
+> See [LOCAL_DEV.md](./LOCAL_DEV.md) — it also covers exactly why
+> `.env` and `.env.local` need to stay in sync.
+
 1. **Postgres** — have a running instance (local, Docker, Supabase, Neon, whatever).
 2. Copy `.env.example` to `.env` and fill in:
    - `DATABASE_URL`

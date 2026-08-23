@@ -27,7 +27,10 @@ export default async function ArchivedProductsPage() {
               <div className="min-w-0">
                 <p className="font-medium text-ink truncate">{p.title}</p>
                 <p className="text-sm text-slate">
-                  <span className="font-mono">₹{(p.priceInPaise / 100).toLocaleString("en-IN")}</span> · Archived
+                  <span className="font-mono">
+                    {p.priceInPaise === 0 ? "Free" : `₹${(p.priceInPaise / 100).toLocaleString("en-IN")}`}
+                  </span>{" "}
+                  · Archived
                 </p>
               </div>
               <RestoreProductButton productId={p.id} />

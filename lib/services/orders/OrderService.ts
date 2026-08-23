@@ -37,9 +37,18 @@ export class OrderService {
   private email = getEmailService();
 
   /**
-   * Creates a PENDING order covering every productId in the cart.
-   * Prices are snapshotted from the Product table right now — later
-   * edits to a product's price never retroactively change a past sale.
+   * Creates an order covering every productId in the cart. Prices are
+   * snapshotted from the Product table right now — later edits to a
+   * product's price never retroactively change a past sale.
+   *
+   * A cart totaling exactly ₹0 (a lone free item, or several) never
+   * touches Razorpay at all — there is nothing to charge, so there is
+   * nothing to wait on. It's created and finalized as PAID in one step,
+   * same downstream behavior (tokens, receipt email) as a real payment
+   * confirming. Any cart with a nonzero total — including a free item
+   * mixed with a paid one — goes through the normal PENDING + Razorpay
+   * flow unchanged; the free item simply contributes ₹0 to that sum,
+   * which the existing reduce() already handles with no special-casing.
    */
   async createPendingOrder(
     productIds: string[],
@@ -66,6 +75,35 @@ export class OrderService {
     }
 
     const amountInPaise = products.reduce((sum, p) => sum + p.priceInPaise, 0);
+    const itemsData = products.map((p) => ({
+      productId: p.id,
+      titleSnapshot: p.title,
+      priceInPaiseSnapshot: p.priceInPaise,
+    }));
+
+    if (amountInPaise === 0) {
+      const order = await prisma.order.create({
+        data: {
+          storeId,
+          buyerName,
+          buyerEmail,
+          buyerPhone,
+          amountInPaise: 0,
+          status: "PAID",
+          // razorpayOrderId is a required, unique column with no Razorpay
+          // order behind it here — synthesized so the column's NOT NULL/
+          // unique constraints hold without a schema change or ever
+          // calling the real API. "free_" makes it unmistakable in the
+          // DB/logs; a real Razorpay order id is always "order_...".
+          razorpayOrderId: `free_${uuid()}`,
+          items: { create: itemsData },
+        },
+        include: { items: true },
+      });
+
+      await this.finalizePaidOrder(order);
+      return order;
+    }
 
     const providerOrder = await this.payment.createOrder({
       amountInPaise,
@@ -81,13 +119,7 @@ export class OrderService {
         amountInPaise,
         status: "PENDING",
         razorpayOrderId: providerOrder.providerOrderId,
-        items: {
-          create: products.map((p) => ({
-            productId: p.id,
-            titleSnapshot: p.title,
-            priceInPaiseSnapshot: p.priceInPaise,
-          })),
-        },
+        items: { create: itemsData },
       },
       include: { items: true },
     });
@@ -165,16 +197,35 @@ export class OrderService {
     });
 
     if (updated.status === "PAID") {
-      const tokens: { title: string; token: string }[] = [];
-      for (const item of updated.items) {
-        const dt = await this.issueDownloadToken(item.id);
-        tokens.push({ title: item.titleSnapshot, token: dt.token });
-      }
-      const sent = await this.sendReceiptEmail(updated.buyerEmail, updated.buyerName, updated.orderNumber, updated.createdAt, tokens);
-      await this.recordEmailDelivery(updated.id, updated.buyerEmail, sent, "CHECKOUT");
+      await this.finalizePaidOrder(updated);
     }
 
     return updated;
+  }
+
+  /**
+   * Everything that happens the moment an order becomes PAID, regardless
+   * of how it got there — a verified Razorpay payment (markPaidByRazorpayOrderId)
+   * or a ₹0 cart that skipped Razorpay entirely (createPendingOrder).
+   * Issues one download token per item, sends the receipt email, and
+   * records the delivery attempt — the exact same sequence either path
+   * used to do inline before this was pulled out to keep them identical.
+   */
+  private async finalizePaidOrder(order: {
+    id: string;
+    buyerEmail: string;
+    buyerName: string;
+    orderNumber: number;
+    createdAt: Date;
+    items: { id: string; titleSnapshot: string }[];
+  }) {
+    const tokens: { title: string; token: string }[] = [];
+    for (const item of order.items) {
+      const dt = await this.issueDownloadToken(item.id);
+      tokens.push({ title: item.titleSnapshot, token: dt.token });
+    }
+    const sent = await this.sendReceiptEmail(order.buyerEmail, order.buyerName, order.orderNumber, order.createdAt, tokens);
+    await this.recordEmailDelivery(order.id, order.buyerEmail, sent, "CHECKOUT");
   }
 
   /**

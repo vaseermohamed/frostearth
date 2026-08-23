@@ -16,7 +16,7 @@ export default function QuizTeaserCard() {
         <p className="font-mono text-xs uppercase tracking-widest text-frost mb-3">Coming soon</p>
         <h2 className="font-display font-bold text-xl sm:text-2xl text-ink mb-2">Test yourself with a quiz</h2>
         <p className="text-sm text-slate max-w-md mx-auto mb-5">
-          Quick practice quizzes built from these notes — coming soon.
+          Quick practices quizzes - coming soon
         </p>
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-frost group-hover:gap-2.5 transition-all">
           Learn more →

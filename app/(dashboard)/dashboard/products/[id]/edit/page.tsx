@@ -137,12 +137,13 @@ export default function EditProductPage() {
           <input
             name="priceRupees"
             type="number"
-            min={1}
+            min={0}
             step="1"
             required
             defaultValue={product.priceInPaise / 100}
             className="w-full rounded-md border border-fog px-3 py-2"
           />
+          <p className="text-xs text-slate mt-1">Enter 0 to make this a free product.</p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Status</label>
