@@ -20,6 +20,7 @@ model Store {
   users           User[]
   examCountdowns  ExamCountdown[]
   notices         Notice[]
+  quizzes         Quiz[]
 
   @@map("stores")
 }
@@ -178,6 +179,86 @@ model Notice {
 
   @@index([storeId])
   @@map("notices")
+}
+
+/// Free-to-enter, skill-based quiz — deliberately NOT a random draw
+/// (see QuizEntry) to stay clear of India's lottery/gambling regulations,
+/// which a chance-based giveaway would risk. Status is the sole gate on
+/// whether the public page accepts entries; there is no automatic
+/// time-based transition — startsAt/endsAt are informational display
+/// fields only, opening and closing are always a manual creator action
+/// (see QuizService.close), since there's no automatic winner-selection
+/// moment to trigger off of.
+model Quiz {
+  id        String     @id @default(cuid())
+  storeId   String
+  title     String
+  subject   String
+  status    QuizStatus @default(DRAFT)
+  startsAt  DateTime
+  endsAt    DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  questions Question[]
+  entries   QuizEntry[]
+  store     Store      @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+  @@index([storeId, status])
+  @@map("quizzes")
+}
+
+model Question {
+  id           String           @id @default(cuid())
+  quizId       String
+  text         String
+  displayOrder Int              @default(0)
+  options      QuestionOption[]
+  quiz         Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean  @default(false)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("quiz_question_options")
+}
+
+/// One row per completed attempt. score/totalTimeMs together ARE the
+/// winner list — sort by score DESC then totalTimeMs ASC (see
+/// QuizService.listEntriesForQuiz) — there is no separate "winner" flag
+/// or random-draw step; ranking IS the result, which is what keeps this
+/// a skill-based contest rather than a lottery. No per-question answer
+/// records are kept (schema deliberately has no Question/Option
+/// relation here) — only the aggregate outcome, so editing a quiz's
+/// questions after entries exist never orphans anything.
+model QuizEntry {
+  id          String   @id @default(cuid())
+  quizId      String
+  name        String
+  email       String
+  phone       String
+  score       Int
+  totalTimeMs Int
+  completedAt DateTime @default(now())
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, email])
+  @@index([quizId])
+  @@map("quiz_entries")
+}
+
+enum QuizStatus {
+  DRAFT
+  LIVE
+  CLOSED
 }
 
 enum DomainType {

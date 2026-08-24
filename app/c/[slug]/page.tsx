@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductService } from "@/lib/services/products/ProductService";
 import { getNoticeService } from "@/lib/services/notices/NoticeService";
+import { getQuizService } from "@/lib/services/quizzes/QuizService";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
 import QuickAddButton from "@/components/QuickAddButton";
 import NoticeBoard from "@/components/NoticeBoard";
@@ -12,6 +13,7 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
   if (!store) notFound();
 
   const notices = await getNoticeService().listActiveForStorefront(store.id);
+  const liveQuiz = await getQuizService().getLiveQuizForStore(store.id);
 
   const recent = products.slice(0, 3);
 
@@ -110,7 +112,10 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
 
       <NoticeBoard notices={notices.map((n) => ({ id: n.id, title: n.title, publishedDate: n.publishedDate }))} />
 
-      <QuizTeaserCard />
+      <QuizTeaserCard
+        storeSlug={store.slug}
+        liveQuiz={liveQuiz ? { title: liveQuiz.title, subject: liveQuiz.subject, questionCount: liveQuiz.questions.length } : null}
+      />
     </div>
   );
 }
