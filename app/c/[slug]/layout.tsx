@@ -44,7 +44,7 @@ export default async function StorefrontLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <SiteFooter storeSlug={store.slug} />
       </div>
     </CartProvider>
   );
