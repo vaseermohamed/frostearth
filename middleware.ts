@@ -41,6 +41,12 @@ const ROOT_DOMAIN = "frostearth.in";
  *     blocked.
  *   - /api/cron — scheduled jobs must keep running.
  *   - /dashboard — the actual dashboard pages.
+ *   - /admin — the platform-level legal-policy admin area (see
+ *     app/(admin)/admin/legal). Same reasoning as /dashboard: it's an
+ *     authenticated internal tool, not a public page, and an admin must
+ *     be able to keep managing legal policies while the public site is
+ *     in maintenance — leaving it off this list would lock admins out
+ *     of exactly the tool they'd most plausibly need during an incident.
  * Any OTHER /api/* route is allowed through only if the request
  * already carries a valid session cookie (see the check below) — the
  * same authentication check the dashboard gate itself uses, so a
@@ -51,7 +57,15 @@ const ROOT_DOMAIN = "frostearth.in";
  * actual point — maintenance mode has to stop real public actions,
  * not just hide the pages that trigger them.
  */
-const MAINTENANCE_EXEMPT_PREFIXES = ["/maintenance", "/login", "/api/auth", "/api/webhooks/razorpay", "/api/cron", "/dashboard"];
+const MAINTENANCE_EXEMPT_PREFIXES = [
+  "/maintenance",
+  "/login",
+  "/api/auth",
+  "/api/webhooks/razorpay",
+  "/api/cron",
+  "/dashboard",
+  "/admin",
+];
 
 function isMaintenanceExempt(pathname: string): boolean {
   return MAINTENANCE_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
@@ -88,6 +102,32 @@ export async function middleware(req: NextRequest) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("from", url.pathname);
       return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  /**
+   * /admin's role check genuinely lives HERE, not in
+   * app/(admin)/layout.tsx — confirmed by direct testing that a
+   * layout-level conditional render does NOT stop a nested page
+   * component from executing and leaking its output into the response's
+   * RSC flight payload even when the painted page shows "Access denied"
+   * (see app/admin-denied/page.tsx's comment for the full story). A
+   * rewrite here means the real /admin/legal tree is never invoked at
+   * all for a non-admin request, so there is nothing left to leak.
+   * app/(admin)/layout.tsx keeps its own role check too, as a second
+   * line of defense, but it is no longer the thing actually protecting
+   * this boundary.
+   */
+  if (url.pathname.startsWith("/admin")) {
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const session = token ? await verifySessionToken(token) : null;
+    if (!session) {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("from", url.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (session.role !== "ADMIN") {
+      return NextResponse.rewrite(new URL("/admin-denied", req.url));
     }
   }
 
