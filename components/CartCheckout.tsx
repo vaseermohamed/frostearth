@@ -32,6 +32,12 @@ export default function CartCheckout({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  // DPDP requirement: unchecked by default, every time — no "remember my
+  // choice" persistence across sessions or even across a single page's
+  // re-renders. The Pay button being disabled below is the actual gate;
+  // the server-side `policiesAccepted: z.literal(true)` check in
+  // createCheckoutSchema is the real trust boundary this is backing up.
+  const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [status, setStatus] = useState<"idle" | "processing">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +69,10 @@ export default function CartCheckout({
       setError("Enter a valid 10-digit mobile number.");
       return;
     }
+    if (!policiesAccepted) {
+      setError("You must accept the Terms, Privacy Policy, and Refund Policy to continue.");
+      return;
+    }
 
     setStatus("processing");
 
@@ -74,6 +84,7 @@ export default function CartCheckout({
         buyerName: name,
         buyerEmail: email,
         buyerPhone: digitsOnly,
+        policiesAccepted,
       }),
     });
     const created = await createRes.json();
@@ -182,10 +193,33 @@ export default function CartCheckout({
           is wrong.
         </p>
       </div>
+      <label className="flex items-start gap-2 text-xs text-slate px-1">
+        <input
+          type="checkbox"
+          checked={policiesAccepted}
+          onChange={(e) => setPoliciesAccepted(e.target.checked)}
+          className="mt-0.5 shrink-0 accent-frost"
+        />
+        <span>
+          I agree to the{" "}
+          <a href={`/c/${slug}/terms`} target="_blank" rel="noopener noreferrer" className="text-ink underline">
+            Terms
+          </a>
+          ,{" "}
+          <a href={`/c/${slug}/privacy`} target="_blank" rel="noopener noreferrer" className="text-ink underline">
+            Privacy Policy
+          </a>
+          , and{" "}
+          <a href={`/c/${slug}/refund-policy`} target="_blank" rel="noopener noreferrer" className="text-ink underline">
+            Refund Policy
+          </a>
+          .
+        </span>
+      </label>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <button
         onClick={handlePay}
-        disabled={status === "processing" || items.length === 0}
+        disabled={status === "processing" || items.length === 0 || !policiesAccepted}
         className="w-full rounded-full bg-frost hover:opacity-90 transition-opacity text-white text-sm font-medium px-3 py-2.5 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
         {status === "processing" ? "Processing…" : `Pay ₹${(totalInPaise / 100).toLocaleString("en-IN")}`}

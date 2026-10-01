@@ -30,6 +30,19 @@ export class AuthService {
     return session;
   }
 
+  /**
+   * Gates the platform-level legal-policy admin area — deliberately a
+   * separate check from requireSession, not a parameter on it, so every
+   * call site is explicit about which trust boundary it's enforcing.
+   * UserRole.ADMIN existed in the schema before this with nothing in the
+   * codebase ever checking it; this is the first real gate on it.
+   */
+  async requireAdminSession(): Promise<SessionPayload> {
+    const session = await this.requireSession();
+    if (session.role !== "ADMIN") throw new Error("Admin access required");
+    return session;
+  }
+
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
   }

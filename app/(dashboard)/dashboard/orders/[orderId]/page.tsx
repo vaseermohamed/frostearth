@@ -2,9 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
+import { getPolicyService } from "@/lib/services/policies/PolicyService";
 import { formatOrderNumber, formatIstDateTime } from "@/lib/services/orders/orderFilters";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
 import ResendEmailForm from "@/components/dashboard/ResendEmailForm";
+
+const POLICY_LABELS: Record<string, string> = {
+  TERMS: "Terms of Service",
+  PRIVACY: "Privacy Policy",
+  REFUND_POLICY: "Refund Policy",
+};
 
 /**
  * Creator-only, full-detail view of a single order — separate from the
@@ -24,6 +31,7 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
   if (!order) notFound();
 
   const deliveries = order.status === "PAID" ? await getOrderService().getEmailDeliveriesForOrder(order.id) : [];
+  const consents = await getPolicyService().getConsentsForOrder(order.id);
 
   return (
     <div>
@@ -92,6 +100,23 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
           ₹{(order.amountInPaise / 100).toLocaleString("en-IN")}
         </span>
       </div>
+
+      {consents.length > 0 && (
+        <div className="bg-white rounded-2xl border border-fog p-5 mb-6">
+          <p className="text-sm font-medium text-ink mb-3">Legal policy consent</p>
+          <div className="divide-y divide-fog">
+            {consents.map((c) => (
+              <div key={c.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-ink">{POLICY_LABELS[c.policyType] ?? c.policyType}</span>
+                <span className="text-xs text-slate text-right">
+                  v{c.version} · effective {formatIstDateTime(c.effectiveAt)} ·{" "}
+                  <span className="font-mono">{c.contentHash.slice(0, 12)}…</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {order.status === "PAID" && (
         <div className="bg-white rounded-2xl border border-fog p-6">

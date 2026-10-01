@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { getPaymentService } from "@/lib/services/payment";
 import { getEmailService } from "@/lib/services/email";
+import { PolicyService, getPolicyService } from "@/lib/services/policies/PolicyService";
 import { v4 as uuid } from "uuid";
 import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
 
@@ -101,6 +102,7 @@ export class OrderService {
         include: { items: true },
       });
 
+      await this.recordPolicyConsents(order.id, storeId);
       await this.finalizePaidOrder(order);
       return order;
     }
@@ -124,7 +126,48 @@ export class OrderService {
       include: { items: true },
     });
 
+    await this.recordPolicyConsents(order.id, storeId);
     return order;
+  }
+
+  /**
+   * Writes one PolicyConsent row per policy type (TERMS/PRIVACY/
+   * REFUND_POLICY) at the moment an order is created — consent is about
+   * what the buyer agreed to when they clicked Pay, not whether the
+   * payment later succeeded, so this runs for both the ₹0-instant-PAID
+   * path and the normal PENDING-then-Razorpay path, unconditionally.
+   * Uses the order's OWN storeId (never a default) and always the
+   * CURRENT published version at this exact moment — every field other
+   * than the FK/ids is a deliberate snapshot (see the PolicyConsent
+   * model comment), so this consent record's legal meaning never changes
+   * even if the policy is edited and republished five minutes later.
+   * createCheckoutSchema's `policiesAccepted: z.literal(true)` is what
+   * actually gates whether this method is ever reached — route handlers
+   * never call createPendingOrder without that having already been true.
+   */
+  private async recordPolicyConsents(orderId: string, storeId: string) {
+    const policyService = getPolicyService();
+
+    for (const policyType of PolicyService.ALL_TYPES) {
+      const published = await policyService.getCurrentPublished(storeId, policyType);
+      if (!published || !published.version || !published.effectiveAt || !published.contentHash) {
+        throw new Error(
+          `Could not complete checkout — this store's ${policyType} policy is not published yet`
+        );
+      }
+
+      await prisma.policyConsent.create({
+        data: {
+          orderId,
+          storeId,
+          policyVersionId: published.id,
+          policyType,
+          version: published.version,
+          effectiveAt: published.effectiveAt,
+          contentHash: published.contentHash,
+        },
+      });
+    }
   }
 
   verifyCheckoutSignature(params: {

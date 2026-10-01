@@ -14,6 +14,14 @@ export const createCheckoutSchema = z.object({
   // that data must keep working, not get force-migrated. Zod is what
   // actually enforces "required" for every NEW checkout from here on.
   buyerPhone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+  // DPDP-driven: the checkbox on the cart page is unchecked by default, so
+  // this must be an explicit `true`, never an absent field defaulting to
+  // "accepted" — z.literal rejects false/missing/anything else as a 400,
+  // which is the actual server-side trust boundary (the client's disabled
+  // Pay button is only a UX nicety on top of this).
+  policiesAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms, Privacy Policy, and Refund Policy to continue" }),
+  }),
 });
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
 

@@ -21,6 +21,7 @@ model Store {
   examCountdowns  ExamCountdown[]
   notices         Notice[]
   quizzes         Quiz[]
+  policyVersions  PolicyVersion[]
 
   @@map("stores")
 }
@@ -74,6 +75,7 @@ model Order {
   updatedAt         DateTime        @updatedAt
   items             OrderItem[]
   emailDeliveries   EmailDelivery[]
+  policyConsents    PolicyConsent[]
   store             Store           @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -282,4 +284,82 @@ enum OrderStatus {
   PENDING
   PAID
   FAILED
+}
+
+/// One row per edit/publish cycle of a legal policy document, scoped to a
+/// single store — every tenant gets its own independent policy history,
+/// never a shared platform-wide document, even though today only the
+/// "founder" store has real content (see the admin legal area under
+/// app/(admin)/admin/legal). A row is a DRAFT while being edited and
+/// PUBLISHED exactly once; version/effectiveAt/contentHash are all left
+/// null on a DRAFT and are set together, exactly once, at publish time
+/// (see PolicyService.publish) — after that, a trigger on this table
+/// (policy_versions_immutable_once_published, added by hand in this
+/// migration) refuses ANY update to a row once its status is PUBLISHED,
+/// regardless of which code path attempts it. Editing a published policy
+/// always means creating a brand new DRAFT row; the old PUBLISHED row is
+/// never touched again, which is what lets PolicyConsent snapshot a
+/// specific version forever even if someone edits/republishes later.
+model PolicyVersion {
+  id          String              @id @default(cuid())
+  storeId     String
+  policyType  PolicyType
+  version     Int?
+  title       String
+  content     String
+  status      PolicyVersionStatus @default(DRAFT)
+  effectiveAt DateTime?
+  contentHash String?
+  createdAt   DateTime            @default(now())
+  store       Store               @relation(fields: [storeId], references: [id])
+  consents    PolicyConsent[]
+
+  // version is null for every DRAFT row (Postgres treats multiple NULLs
+  // in a unique index as distinct, so any number of drafts can coexist
+  // without colliding here) and is assigned exactly once, at publish,
+  // from MAX(version) + 1 for this exact storeId+policyType pair — this
+  // constraint is what makes that number collision-proof per tenant.
+  @@unique([storeId, policyType, version])
+  @@index([storeId, policyType, status])
+  @@map("policy_versions")
+}
+
+/// A permanent, self-contained record that a specific buyer's order was
+/// placed after agreeing to specific, named versions of Terms/Privacy/
+/// Refund Policy — one row per policyType per order (3 per order). Every
+/// field below except id/orderId/policyVersionId/acceptedAt is a
+/// deliberate snapshot copied from the PolicyVersion at the moment of
+/// consent (see OrderService.createPendingOrder), not something this
+/// row looks up live through policyVersionId — so this record keeps its
+/// full legal meaning even in a hypothetical future where the
+/// PolicyVersion row it points to were ever deleted or became otherwise
+/// unresolvable. storeId is similarly denormalized from the order's own
+/// store at consent time, never assumed from context.
+model PolicyConsent {
+  id              String        @id @default(cuid())
+  orderId         String
+  storeId         String
+  policyVersionId String
+  policyType      PolicyType
+  version         Int
+  effectiveAt     DateTime
+  contentHash     String
+  acceptedAt      DateTime      @default(now())
+  order           Order         @relation(fields: [orderId], references: [id])
+  policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id])
+
+  @@index([orderId])
+  @@index([storeId])
+  @@map("policy_consents")
+}
+
+enum PolicyType {
+  TERMS
+  PRIVACY
+  REFUND_POLICY
+}
+
+enum PolicyVersionStatus {
+  DRAFT
+  PUBLISHED
 }
