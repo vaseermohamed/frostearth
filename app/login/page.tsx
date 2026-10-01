@@ -21,7 +21,13 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (res.ok) {
-      router.push("/dashboard");
+      const data = await res.json().catch(() => ({}));
+      // ADMIN lands in the platform-level legal-policy area; everyone else
+      // (CREATOR) keeps going to the per-store dashboard, same as before
+      // this branch existed. This is a UX convenience only — the actual
+      // access boundary is enforced server-side (middleware.ts +
+      // requireAdminSession), not by this redirect choice.
+      router.push(data.role === "ADMIN" ? "/admin/legal" : "/dashboard");
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
