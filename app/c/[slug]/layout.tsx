@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProductService } from "@/lib/services/products/ProductService";
+import { getStorefrontBySlug } from "@/lib/services/products/storefrontCache";
 import { getCountdownService } from "@/lib/services/countdowns/CountdownService";
 import { CartProvider } from "@/lib/cart/CartContext";
 import CartWidget from "@/components/CartWidget";
@@ -14,7 +14,7 @@ export default async function StorefrontLayout({
   children: React.ReactNode;
   params: { slug: string };
 }) {
-  const { store } = await getProductService().listPublishedByStoreSlug(params.slug);
+  const { store } = await getStorefrontBySlug(params.slug);
   if (!store) notFound();
 
   const countdowns = await getCountdownService().listActiveForStorefront(store.id);

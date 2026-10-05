@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductService } from "@/lib/services/products/ProductService";
+import { getStorefrontBySlug } from "@/lib/services/products/storefrontCache";
 import AddToCartButton from "@/components/AddToCartButton";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
 
@@ -9,7 +10,7 @@ export default async function ProductPage({
 }: {
   params: { slug: string; productId: string };
 }) {
-  const { store } = await getProductService().listPublishedByStoreSlug(params.slug);
+  const { store } = await getStorefrontBySlug(params.slug);
   if (!store) notFound();
 
   const product = await getProductService().getPublished(store.id, params.productId);

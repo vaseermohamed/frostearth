@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProductService } from "@/lib/services/products/ProductService";
+import { getStorefrontBySlug } from "@/lib/services/products/storefrontCache";
 import { getNoticeService } from "@/lib/services/notices/NoticeService";
 import { getQuizService } from "@/lib/services/quizzes/QuizService";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
@@ -9,11 +9,13 @@ import NoticeBoard from "@/components/NoticeBoard";
 import QuizTeaserCard from "@/components/QuizTeaserCard";
 
 export default async function StorefrontPage({ params }: { params: { slug: string } }) {
-  const { store, products } = await getProductService().listPublishedByStoreSlug(params.slug);
+  const { store, products } = await getStorefrontBySlug(params.slug);
   if (!store) notFound();
 
-  const notices = await getNoticeService().listActiveForStorefront(store.id);
-  const liveQuiz = await getQuizService().getLiveQuizForStore(store.id);
+  const [notices, liveQuiz] = await Promise.all([
+    getNoticeService().listActiveForStorefront(store.id),
+    getQuizService().getLiveQuizForStore(store.id),
+  ]);
 
   const recent = products.slice(0, 3);
 
