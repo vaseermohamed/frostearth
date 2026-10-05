@@ -26,16 +26,16 @@ export default async function ProductPage({
         ← Back to all products
       </Link>
 
-      <div className="rounded-sm overflow-hidden border border-fog mb-8">
+      <div className="aspect-[4/3] rounded-sm overflow-hidden border border-fog mb-8">
         {product.coverImageKey ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`/api/storage/${product.coverImageKey}`}
             alt=""
-            className="w-full max-h-96 object-cover"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <NotebookPlaceholder className="w-full h-72" />
+          <NotebookPlaceholder className="w-full h-full" />
         )}
       </div>
 

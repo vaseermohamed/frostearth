@@ -50,7 +50,7 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {recent.map((p) => (
                   <Link key={p.id} href={`/c/${store.slug}/${p.id}`} className="group block">
-                    <div className="aspect-[3/4] rounded-xl overflow-hidden border border-fog mb-2 transition-colors group-hover:border-ink">
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden border border-fog mb-2 transition-colors group-hover:border-ink">
                       {p.coverImageKey ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
