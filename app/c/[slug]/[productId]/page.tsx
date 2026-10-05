@@ -33,6 +33,9 @@ export default async function ProductPage({
           <img
             src={`/api/storage/${product.coverImageKey}`}
             alt=""
+            width={800}
+            height={600}
+            fetchPriority="high"
             className="w-full h-full object-cover"
           />
         ) : (

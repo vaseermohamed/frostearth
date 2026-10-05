@@ -38,7 +38,15 @@ export default async function ProductsPage() {
                 <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-fog">
                   {p.coverImageKey ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`/api/storage/${p.coverImageKey}`} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={`/api/storage/${p.coverImageKey}`}
+                      alt=""
+                      width={800}
+                      height={600}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <NotebookPlaceholder className="w-full h-full" />
                   )}

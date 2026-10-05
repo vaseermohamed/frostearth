@@ -50,23 +50,38 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
             <div className="order-2 lg:order-1">
               <p className="font-mono text-xs uppercase tracking-widest text-slate mb-4">By {store.name}</p>
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                {recent.map((p) => (
-                  <Link key={p.id} href={`/c/${store.slug}/${p.id}`} className="group block">
-                    <div className="aspect-[4/3] rounded-xl overflow-hidden border border-fog mb-2 transition-colors group-hover:border-ink">
-                      {p.coverImageKey ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`/api/storage/${p.coverImageKey}`}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <NotebookPlaceholder className="w-full h-full" />
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm text-ink font-medium leading-snug line-clamp-2">{p.title}</p>
-                  </Link>
-                ))}
+                {recent.map((p, index) => {
+                  // The first 2 of these 3 thumbnails are the first
+                  // images in the page's actual visual order on a phone
+                  // (the hero text above them has no images of its
+                  // own) — those get loaded eagerly at high priority;
+                  // everything else, including the 3rd one here, is
+                  // lazy. See the main grid below, which is always lazy
+                  // regardless of position for the same reason.
+                  const isPriority = index < 2;
+                  return (
+                    <Link key={p.id} href={`/c/${store.slug}/${p.id}`} className="group block">
+                      <div className="aspect-[4/3] rounded-xl overflow-hidden border border-fog mb-2 transition-colors group-hover:border-ink">
+                        {p.coverImageKey ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={`/api/storage/${p.coverImageKey}`}
+                            alt=""
+                            width={800}
+                            height={600}
+                            className="w-full h-full object-cover"
+                            {...(isPriority
+                              ? { fetchPriority: "high" as const }
+                              : { loading: "lazy" as const, decoding: "async" as const })}
+                          />
+                        ) : (
+                          <NotebookPlaceholder className="w-full h-full" />
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm text-ink font-medium leading-snug line-clamp-2">{p.title}</p>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -90,7 +105,15 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
                   <div className="aspect-[4/3] overflow-hidden">
                     {p.coverImageKey ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`/api/storage/${p.coverImageKey}`} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={`/api/storage/${p.coverImageKey}`}
+                        alt=""
+                        width={800}
+                        height={600}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <NotebookPlaceholder className="w-full h-full" />
                     )}
