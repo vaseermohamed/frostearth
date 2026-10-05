@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
-import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode } from "@/lib/utils/orderCode";
 import { resolveDashboardDateRange, getComparisonRange, percentChange, DATE_RANGE_PRESETS } from "@/lib/services/orders/dateRanges";
 import AutoRefresh from "@/components/AutoRefresh";
 import OrdersLineChart from "@/components/dashboard/OrdersLineChart";
@@ -256,7 +256,7 @@ function RecentOrderRow({
       className="flex items-center justify-between py-3 border-b border-fog last:border-0 -mx-2 px-2 rounded-md hover:bg-paper transition-colors"
     >
       <div className="min-w-0">
-        <p className="font-mono text-sm text-ink">#{formatOrderNumber(order.orderNumber)}</p>
+        <p className="font-mono text-sm text-ink">#{encodeOrderCode(order.orderNumber)}</p>
         <p className="text-xs text-slate truncate">{firstName}</p>
       </div>
       {order.status === "PAID" ? (

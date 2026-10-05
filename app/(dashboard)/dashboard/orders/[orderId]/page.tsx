@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { getPolicyService } from "@/lib/services/policies/PolicyService";
-import { formatOrderNumber, formatIstDateTime } from "@/lib/services/orders/orderFilters";
+import { formatIstDateTime } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode } from "@/lib/utils/orderCode";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
 import ResendEmailForm from "@/components/dashboard/ResendEmailForm";
 
@@ -44,7 +45,7 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
 
       <div className="flex items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-semibold">
-          Order <span className="font-mono">#{formatOrderNumber(order.orderNumber)}</span>
+          Order <span className="font-mono">#{encodeOrderCode(order.orderNumber)}</span>
         </h1>
         <OrderStatusBadge status={order.status} />
       </div>

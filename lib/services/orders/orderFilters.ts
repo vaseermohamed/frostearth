@@ -131,14 +131,3 @@ export function formatCompactIstDateTime(date: Date): string {
   return `${dd} ${month}, ${hours12}:${minutes}${period}`;
 }
 
-/**
- * "FE-000047" — orderNumber is now a sequential Postgres autoincrement
- * Int (see prisma/schema.prisma), zero-padded to 6 digits so small
- * numbers still read clean and every order number is the same width.
- * Shared by the dashboard orders page, the cart success screen, the CSV
- * export, and the receipt email so the format can never drift between them.
- * Has zero imports (safe from both server code and "use client" components).
- */
-export function formatOrderNumber(orderNumber: number): string {
-  return `FE-${orderNumber.toString().padStart(6, "0")}`;
-}

@@ -21,6 +21,7 @@ you may want to replace.
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `NEXT_PUBLIC_RAZORPAY_KEY_ID` | placeholders currently | Fine for everything except actually completing a checkout. To test checkout end-to-end, sign up free at Razorpay, flip to **Test Mode**, and paste real `rzp_test_...` keys. Every other page (products, orders, dashboard, downloads) works without touching these. |
 | `RAZORPAY_WEBHOOK_SECRET` | placeholder | Only needed if you're tunneling (ngrok etc.) to test the webhook path specifically — see the main README's step 5. |
 | `CRON_SECRET` | already generated | Only used by the cleanup-watermarks cron route; harmless locally. |
+| `ORDER_CODE_SECRET` | already generated (dev-only value, already filled in) | Keys the order-code display format (see `lib/utils/orderCode.ts`). Required — there's no default, and a missing value throws rather than silently exposing the raw sequential order number. The dev value here is just for local testing and must never be reused in production. |
 
 ### Why two files (`.env` and `.env.local`)
 

@@ -13,7 +13,7 @@ import fs from "fs";
 import path from "path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, PDFDict, PDFName, PDFString, PDFRawStream, rgb, degrees, PDFFont, PDFPage } from "pdf-lib";
-import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode } from "@/lib/utils/orderCode";
 import { splitIntoScriptRuns, ScriptId } from "@/lib/services/watermark/scriptRuns";
 
 export interface WatermarkData {
@@ -139,7 +139,7 @@ export async function applyWatermark(
   // which would silently clobber the identity fields this function's
   // entire job is to set. Metadata below is written explicitly instead.
   const pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
-  const orderLabel = formatOrderNumber(data.orderNumber);
+  const orderLabel = encodeOrderCode(data.orderNumber);
 
   // A free item (opts.isFree — derived by the caller from the order
   // item's priceInPaiseSnapshot, never a stored flag) skips the visible

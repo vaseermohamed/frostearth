@@ -6,9 +6,9 @@ import { getProductService } from "@/lib/services/products/ProductService";
 import {
   parseOrderFilters,
   formatCompactIstDateTime,
-  formatOrderNumber,
   ORDER_SEARCH_TYPES,
 } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode } from "@/lib/utils/orderCode";
 
 // Same 7-column template used by the header row and every data row —
 // defined once so the two can never drift out of alignment.
@@ -229,7 +229,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 href={`/dashboard/orders/${o.id}`}
                 className={`${GRID_COLS} px-4 h-10 text-xs hover:bg-paper transition-colors`}
               >
-                <span className="font-mono text-ink truncate">{formatOrderNumber(o.orderNumber)}</span>
+                <span className="font-mono text-ink truncate">{encodeOrderCode(o.orderNumber)}</span>
                 <span className="text-slate truncate">{formatCompactIstDateTime(o.createdAt)}</span>
                 <span className="text-ink truncate" title={o.buyerName}>
                   {o.buyerName}

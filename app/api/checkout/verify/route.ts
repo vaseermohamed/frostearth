@@ -24,9 +24,13 @@ export async function POST(req: NextRequest) {
     // time confirmClientCheckout returns, OrderService.finalizePaidOrder
     // has already issued one token per item (or thrown), so there's no
     // need for a second query here just to prove that happened.
+    //
+    // The raw sequential orderNumber int is deliberately never sent here
+    // either, for the same reason as /api/checkout — it isn't read by
+    // the client and would otherwise leak a live order-count to any
+    // buyer. The confirmation page displays the obfuscated code itself.
     return NextResponse.json({
       status: order.status,
-      orderNumber: order.orderNumber,
       downloads: order.items.map((item) => ({ title: item.titleSnapshot })),
     });
   } catch (err: any) {

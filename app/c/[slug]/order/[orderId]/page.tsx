@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductService } from "@/lib/services/products/ProductService";
 import { getOrderService } from "@/lib/services/orders/OrderService";
-import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode } from "@/lib/utils/orderCode";
 
 /**
  * A real, persistent, refresh-safe replacement for what used to be
@@ -61,7 +61,7 @@ export default async function OrderConfirmationPage({
 
       <div className="text-center mb-8">
         <h1 className="font-display font-black text-2xl text-ink mb-2">Payment successful</h1>
-        <p className="font-mono text-sm text-slate">Order #{formatOrderNumber(order.orderNumber)}</p>
+        <p className="font-mono text-sm text-slate">Order #{encodeOrderCode(order.orderNumber)}</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-fog p-5 mb-6">

@@ -4,7 +4,8 @@ import { getPaymentService } from "@/lib/services/payment";
 import { getEmailService } from "@/lib/services/email";
 import { PolicyService, getPolicyService } from "@/lib/services/policies/PolicyService";
 import { v4 as uuid } from "uuid";
-import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
+import { formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
+import { encodeOrderCode, decodeOrderCode } from "@/lib/utils/orderCode";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 const DOWNLOAD_TOKEN_MAX_USES = 20;
@@ -311,7 +312,7 @@ export class OrderService {
     orderDate: Date,
     tokens: { title: string; token: string }[]
   ): Promise<boolean> {
-    const formattedOrderNumber = formatOrderNumber(orderNumber);
+    const formattedOrderNumber = encodeOrderCode(orderNumber);
 
     try {
       return await this.email.send({
@@ -730,21 +731,18 @@ function buildSearchWhere(search?: { type: OrderSearchType; query: string }): Pr
 
   switch (search.type) {
     case "orderNumber": {
-      // orderNumber is a real Postgres Int (see prisma/schema.prisma), so
-      // this is an exact match, not a substring one — Prisma/Postgres
-      // can't do "contains" on an integer column without a text cast,
-      // and exact ID lookup is the normal expectation anyway (a creator
-      // pastes/types the number off a receipt, e.g. "47" or "FE-000047").
-      // Non-digit input (or none) must match nothing, not silently fall
-      // through to "no filter" and return every order. Also must never
-      // pass a value outside Postgres's int4 range (-2147483648..2147483647)
-      // to Prisma — an out-of-range Int crashes the query with a raw DB
-      // error instead of just matching nothing (confirmed bug: a 10-digit
-      // mobile number pasted into this same field exceeds int4 max).
-      const digitsOnly = search.query.replace(/\D/g, "");
-      const parsed = digitsOnly ? parseInt(digitsOnly, 10) : NaN;
-      const inRange = !Number.isNaN(parsed) && parsed >= 0 && parsed <= POSTGRES_INT4_MAX;
-      return { orderNumber: inRange ? parsed : -1 };
+      // The creator now types/pastes the DISPLAYED code ("FE-XXXX-XXXX"),
+      // not the raw sequential int — decodeOrderCode also still accepts
+      // the old "FE-000047"/plain-digit format, so a search typed from an
+      // old receipt still works. An input that doesn't decode at all (or
+      // decodes to something outside Postgres's int4 range —
+      // -2147483648..2147483647, see POSTGRES_INT4_MAX — an out-of-range
+      // Int would otherwise crash the query with a raw DB error) must
+      // match NOTHING, never silently fall through to "no filter" and
+      // return every order.
+      const decoded = decodeOrderCode(search.query);
+      const inRange = decoded !== null && decoded >= 0 && decoded <= POSTGRES_INT4_MAX;
+      return { orderNumber: inRange ? decoded : -1 };
     }
     case "email":
       return { buyerEmail: { contains: search.query, mode: "insensitive" as const } };
@@ -796,7 +794,7 @@ function buildReceiptEmailHtml(params: {
 }): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   const year = new Date().getFullYear();
-  const formattedOrderNumber = formatOrderNumber(params.orderNumber);
+  const formattedOrderNumber = encodeOrderCode(params.orderNumber);
   const formattedDate = formatIstDateTime(params.orderDate);
 
   const itemRows = params.tokens
