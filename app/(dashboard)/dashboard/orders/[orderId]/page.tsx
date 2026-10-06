@@ -97,7 +97,7 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
         <div className="bg-white rounded-2xl border border-fog p-6">
           <h2 className="font-medium text-ink mb-1">Resend download links</h2>
           <p className="text-sm text-slate mb-4">
-            Buyer's own email stays <span className="font-medium text-ink">{order.buyerEmail}</span> — this only
+            Buyer&apos;s own email stays <span className="font-medium text-ink">{order.buyerEmail}</span> — this only
             sends an extra copy somewhere else (e.g. if their email was mistyped at checkout).
           </p>
           <ResendEmailForm orderId={order.id} />

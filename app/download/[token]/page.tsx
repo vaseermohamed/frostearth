@@ -149,8 +149,8 @@ export default function DownloadInterstitialPage() {
         </div>
         <p className="text-[15px] font-medium text-ink mb-1">Open this link in your browser</p>
         <p className="text-[13px] text-slate mb-6 max-w-xs mx-auto">
-          {inAppBrowserName ? `${inAppBrowserName}'s built-in browser` : "This app's built-in browser"} can't save
-          files. Tap the ••• or share icon, then choose "Open in Safari," "Open in Chrome," or "Open in browser" to
+          {inAppBrowserName ? `${inAppBrowserName}'s built-in browser` : "This app's built-in browser"} can&apos;t save
+          files. Tap the ••• or share icon, then choose &quot;Open in Safari,&quot; &quot;Open in Chrome,&quot; or &quot;Open in browser&quot; to
           continue.
         </p>
       </div>
@@ -188,10 +188,10 @@ export default function DownloadInterstitialPage() {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 sm:py-16">
         <div className="bg-white rounded-2xl border border-red-200 p-6">
-          <p className="font-display font-extrabold text-lg text-red-700 mb-1">Couldn't prepare your download</p>
+          <p className="font-display font-extrabold text-lg text-red-700 mb-1">Couldn&apos;t prepare your download</p>
           <p className="text-sm text-slate mb-4">{errorMessage}</p>
           <p className="text-sm text-slate">
-            If this doesn't seem right,{" "}
+            If this doesn&apos;t seem right,{" "}
             <a href="mailto:hello@frostearth.in" className="text-ink underline">
               contact us
             </a>
