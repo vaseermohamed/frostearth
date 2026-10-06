@@ -11,6 +11,8 @@ import { QuizService } from "@/lib/services/quizzes/QuizService";
 const quiz = {
   id: "quiz1",
   status: "LIVE",
+  startsAt: new Date(Date.now() - 60_000),
+  endsAt: null as Date | null,
   questions: [
     { id: "q1", options: [{ id: "q1a", isCorrect: true }, { id: "q1b", isCorrect: false }] },
     { id: "q2", options: [{ id: "q2a", isCorrect: false }, { id: "q2b", isCorrect: true }] },
@@ -55,6 +57,20 @@ describe("QuizService.submitEntry", () => {
 
   it("rejects entries when the quiz is not live", async () => {
     db.quiz.findUnique.mockResolvedValue({ ...quiz, status: "CLOSED" });
+    await expect(
+      new QuizService().submitEntry({ ...baseEntry, answers: [{ questionId: "q1", optionId: "q1a" }] } as any)
+    ).rejects.toThrow(/no longer accepting/);
+  });
+
+  it("rejects entries before the quiz starts", async () => {
+    db.quiz.findUnique.mockResolvedValue({ ...quiz, startsAt: new Date(Date.now() + 60_000) });
+    await expect(
+      new QuizService().submitEntry({ ...baseEntry, answers: [{ questionId: "q1", optionId: "q1a" }] } as any)
+    ).rejects.toThrow(/hasn't opened/);
+  });
+
+  it("rejects entries after the quiz ends", async () => {
+    db.quiz.findUnique.mockResolvedValue({ ...quiz, endsAt: new Date(Date.now() - 1000) });
     await expect(
       new QuizService().submitEntry({ ...baseEntry, answers: [{ questionId: "q1", optionId: "q1a" }] } as any)
     ).rejects.toThrow(/no longer accepting/);

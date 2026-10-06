@@ -106,16 +106,22 @@ export class QuizService {
 
   /**
    * Public-facing — the single most-recently-created LIVE quiz for this
-   * store. startsAt/endsAt are NOT checked here (see the Quiz model
-   * comment — status alone gates entry, deliberately no automatic
-   * time-based transitions in this first version). Options are
+   * store that is inside its startsAt/endsAt window (see isOpenAt).
+   * Status is still never changed automatically; a LIVE quiz outside
+   * its window is simply not shown or accepted. Options are
    * returned WITHOUT isCorrect — the caller (the quiz page) must not
    * forward that field to the client under any circumstances, since
    * that's the actual answer key.
    */
   async getLiveQuizForStore(storeId: string) {
+    const now = new Date();
     const quiz = await prisma.quiz.findFirst({
-      where: { storeId, status: "LIVE" },
+      where: {
+        storeId,
+        status: "LIVE",
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
       orderBy: { createdAt: "desc" },
       include: {
         questions: {
@@ -155,6 +161,9 @@ export class QuizService {
     });
     if (!quiz) throw new Error("Quiz not found");
     if (quiz.status !== "LIVE") throw new Error("This quiz is no longer accepting entries");
+    const now = new Date();
+    if (quiz.startsAt > now) throw new Error("This quiz hasn't opened yet");
+    if (quiz.endsAt && quiz.endsAt <= now) throw new Error("This quiz is no longer accepting entries");
 
     const existing = await prisma.quizEntry.findUnique({
       where: { quizId_email: { quizId: input.quizId, email: input.email } },

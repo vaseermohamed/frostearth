@@ -183,12 +183,11 @@ model Notice {
 
 /// Free-to-enter, skill-based quiz — deliberately NOT a random draw
 /// (see QuizEntry) to stay clear of India's lottery/gambling regulations,
-/// which a chance-based giveaway would risk. Status is the sole gate on
-/// whether the public page accepts entries; there is no automatic
-/// time-based transition — startsAt/endsAt are informational display
-/// fields only, opening and closing are always a manual creator action
-/// (see QuizService.close), since there's no automatic winner-selection
-/// moment to trigger off of.
+/// which a chance-based giveaway would risk. A quiz accepts entries only
+/// while it is LIVE AND inside its startsAt/endsAt window (endsAt null =
+/// no end). Status itself never changes automatically — opening and
+/// closing stay a manual creator action (see QuizService.close); the
+/// window just stops a LIVE quiz being shown or entered outside it.
 model Quiz {
   id        String     @id @default(cuid())
   storeId   String
