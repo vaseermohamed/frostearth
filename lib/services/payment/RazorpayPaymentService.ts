@@ -46,10 +46,17 @@ export class RazorpayPaymentService implements PaymentService {
   parseWebhookEvent(rawBody: string): WebhookEvent {
     const payload = JSON.parse(rawBody);
     const entity = payload.payload?.payment?.entity;
-    const status = payload.event === "payment.captured" ? "captured" : "failed";
+    // Only these two events change an order. Anything else the webhook is
+    // subscribed to (payment.authorized, order.paid, refunds, ...) used to
+    // fall through as "failed" and mark a genuinely paying order FAILED.
+    const status =
+      payload.event === "payment.captured" ? "captured" : payload.event === "payment.failed" ? "failed" : "ignored";
+    if (!entity?.order_id || !entity?.id) {
+      return { providerOrderId: "", providerPaymentId: "", status: "ignored" };
+    }
     return {
-      providerOrderId: entity?.order_id,
-      providerPaymentId: entity?.id,
+      providerOrderId: entity.order_id,
+      providerPaymentId: entity.id,
       status,
     };
   }

@@ -16,7 +16,8 @@ export interface VerifyWebhookInput {
 export interface WebhookEvent {
   providerOrderId: string;
   providerPaymentId: string;
-  status: "captured" | "failed";
+  /** "ignored" = an event type this app doesn't act on, or one missing payment data. */
+  status: "captured" | "failed" | "ignored";
 }
 
 /**

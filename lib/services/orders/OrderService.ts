@@ -145,6 +145,21 @@ export class OrderService {
     if (!valid) throw new Error("Invalid webhook signature");
 
     const event = this.payment.parseWebhookEvent(rawBody);
+    if (event.status === "ignored") return null;
+
+    // A signed event for a Razorpay order this app never created (a
+    // payment link or another integration on the same account) isn't an
+    // error worth a 400 — Razorpay retries non-2xx responses and
+    // eventually disables a webhook that keeps failing.
+    const exists = await prisma.order.findUnique({
+      where: { razorpayOrderId: event.providerOrderId },
+      select: { id: true },
+    });
+    if (!exists) {
+      console.warn(`[webhook] ignoring event for unknown razorpay order ${event.providerOrderId}`);
+      return null;
+    }
+
     return this.markPaidByRazorpayOrderId(
       event.providerOrderId,
       event.providerPaymentId,

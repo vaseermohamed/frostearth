@@ -114,6 +114,31 @@ describe("OrderService payment confirmation", () => {
   });
 });
 
+describe("OrderService webhook filtering", () => {
+  beforeEach(() => {
+    state.orders.clear();
+    state.emails.length = 0;
+    seedOrder();
+  });
+
+  it("leaves the order alone for an ignored event type", async () => {
+    const result = await new OrderService().confirmWebhookPayment(
+      JSON.stringify({ providerOrderId: "order_1", providerPaymentId: "pay_1", status: "ignored" }),
+      "sig"
+    );
+    expect(result).toBeNull();
+    expect(state.orders.get("o1").status).toBe("PENDING");
+  });
+
+  it("acknowledges events for orders this app never created", async () => {
+    const result = await new OrderService().confirmWebhookPayment(
+      JSON.stringify({ providerOrderId: "order_other", providerPaymentId: "pay_9", status: "captured" }),
+      "sig"
+    );
+    expect(result).toBeNull();
+  });
+});
+
 describe("OrderService.consumeDownloadToken", () => {
   beforeEach(() => state.tokens.clear());
 
