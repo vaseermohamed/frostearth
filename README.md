@@ -6,13 +6,27 @@ PDF upload, public product pages, Razorpay UPI checkout, and secure post-payment
 ## What's actually wired up (no mocks)
 
 - Real Postgres schema via Prisma, every business table carries `storeId`
-- Real bcrypt-hashed password auth with signed JWT session cookies
-- Real file storage on local disk (behind a `StorageService` interface —
-  swap in S3/R2/MinIO later with zero call-site changes)
+- Real bcrypt-hashed password auth with signed JWT session cookies, with
+  failed-login rate limiting (5 per email / 20 per IP per 15 minutes)
+- File storage behind a `StorageService` interface: Cloudflare R2 in
+  production (`STORAGE_DRIVER="r2"`, direct-to-R2 presigned uploads),
+  local disk for development
 - Real Razorpay order creation, checkout, and **webhook signature
   verification** (never trusts the client-side redirect alone)
-- Real download tokens: time-limited, use-limited, only issued after a
+- Real download tokens: 3-day expiry, 20 uses, only issued after a
   verified payment
+- Every download is **watermarked on the fly** with the buyer's name,
+  email, phone and order number (visible tiles + PDF metadata; free items
+  get metadata only). Latin, Tamil and Devanagari names are supported via
+  bundled Noto fonts; nothing watermarked is ever stored.
+- Receipt emails via Resend or Brevo (`EMAIL_PROVIDER`), with every send
+  logged to `EmailDelivery`; `console` logs instead of sending
+- Homepage exam-countdown carousel and notice board, managed from the
+  dashboard
+- Skill-based quizzes: draft → live → closed, public entry form, score
+  computed server-side, entries ranked by score then time. A live quiz is
+  only shown and accepts entries between its start and end times.
+- Maintenance mode (`MAINTENANCE_MODE="true"`) — see `middleware.ts`
 
 ## Setup
 
@@ -59,15 +73,44 @@ PDF upload, public product pages, Razorpay UPI checkout, and secure post-payment
 ## Where things live
 
 ```
-lib/services/storage/   StorageService interface + LocalFsStorageService
-lib/services/payment/   PaymentService interface + RazorpayPaymentService
-lib/services/orders/    OrderService — PENDING → PAID lifecycle, download tokens
-lib/services/products/  ProductService — CRUD, tenant-scoped
-lib/services/auth/      AuthService — login/session
-lib/services/email/     EmailService interface (stubbed to console; not on MVP critical path)
-middleware.ts            subdomain → x-store-slug header, /dashboard auth guard
-prisma/schema.prisma      Store / User / Product / Order / DownloadToken
+lib/services/storage/    StorageService interface + LocalFs / R2 implementations
+lib/services/payment/    PaymentService interface + RazorpayPaymentService
+lib/services/orders/     OrderService — PENDING → PAID lifecycle, download tokens, dashboard stats
+lib/services/download/   DownloadService — token → watermarked PDF bytes
+lib/services/watermark/  PdfWatermarkService + per-script font runs
+lib/services/products/   ProductService — CRUD, tenant-scoped
+lib/services/auth/       AuthService — login (rate-limited), session, credential changes
+lib/services/email/      EmailService interface + Resend / Brevo / Console
+lib/services/quizzes/    QuizService — quizzes, entries, scoring
+lib/services/countdowns/ CountdownService — homepage exam countdowns
+lib/services/notices/    NoticeService — homepage notice board
+middleware.ts            maintenance mode, subdomain → x-store-slug header, /dashboard auth guard
+prisma/schema.prisma     all models (Store, Product, Order, DownloadToken, Quiz, ...)
+tests/                   Vitest unit tests (database, email and payment are faked)
 ```
+
+## Development checks
+
+```bash
+npm test               # Vitest unit tests, no database needed
+npm run typecheck      # tsc --noEmit
+npm run lint           # next lint
+npm run format:check   # prettier (npm run format to fix)
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs all four plus a production
+build on every push and pull request.
+
+## Deploying
+
+- The build does **not** run migrations. Before deploying a commit that adds
+  a migration under `prisma/migrations/`, apply it to the production
+  database: `DATABASE_URL=<prod url> npx prisma migrate deploy`.
+- Set every variable in `.env.example` that applies (R2, email provider,
+  Razorpay live keys, `SESSION_SECRET`, `CRON_SECRET`).
+- `vercel.json` schedules `/api/cron/cleanup-watermarks` daily. It only
+  removes watermarked copies left over from before downloads stopped being
+  cached, so it has nothing to do once those are gone.
 
 ## Known MVP scope cuts (intentional, not oversights)
 
@@ -76,7 +119,4 @@ prisma/schema.prisma      Store / User / Product / Order / DownloadToken
 - Cover images are served unauthenticated (they're marketing material,
   not the paid asset) — product **files** are never reachable except
   through a redeemed download token.
-- No email delivery — `EmailService` is stubbed to `console.log` so a
-  real provider (Resend/Postmark/SES) is a single-file change, not a
-  refactor.
 - No refunds/coupons/multi-currency — out of MVP scope per the brief.
