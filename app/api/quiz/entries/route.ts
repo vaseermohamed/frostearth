@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const entry = await getQuizService().submitEntry(parsed.data);
-    return NextResponse.json({ score: entry.score, totalQuestions: parsed.data.answers.length }, { status: 201 });
+    return NextResponse.json({ score: entry.score, totalQuestions: entry.totalQuestions }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Could not submit entry" }, { status: 400 });
   }

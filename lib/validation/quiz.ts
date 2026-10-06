@@ -74,6 +74,9 @@ export const quizEntrySchema = z.object({
         optionId: z.string().min(1),
       })
     )
-    .min(1),
+    .min(1)
+    // Generous ceiling, far above any real quiz — scoring dedupes anyway
+    // (see QuizService.submitEntry), this just bounds the request size.
+    .max(200),
 });
 export type QuizEntryInput = z.infer<typeof quizEntrySchema>;

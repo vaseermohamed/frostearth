@@ -164,13 +164,19 @@ export class QuizService {
     const correctOptionByQuestion = new Map(
       quiz.questions.map((q) => [q.id, q.options.find((o) => o.isCorrect)?.id])
     );
+    // Each question counts at most once, and only questions that belong
+    // to this quiz count at all — otherwise repeating one correct answer
+    // N times would score N, above the number of questions.
+    const answered = new Set<string>();
     let score = 0;
     for (const answer of input.answers) {
+      if (answered.has(answer.questionId) || !correctOptionByQuestion.has(answer.questionId)) continue;
+      answered.add(answer.questionId);
       if (correctOptionByQuestion.get(answer.questionId) === answer.optionId) score++;
     }
 
     try {
-      return await prisma.quizEntry.create({
+      const entry = await prisma.quizEntry.create({
         data: {
           quizId: input.quizId,
           name: input.name,
@@ -180,6 +186,7 @@ export class QuizService {
           totalTimeMs: input.totalTimeMs,
         },
       });
+      return { ...entry, totalQuestions: quiz.questions.length };
     } catch (err: any) {
       // Backstop for a race between the proactive check above and a
       // near-simultaneous second submission from the same email — the
