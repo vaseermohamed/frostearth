@@ -282,3 +282,20 @@ enum OrderStatus {
   PAID
   FAILED
 }
+
+/// One row per FAILED creator login — the only thing the login rate
+/// limit needs (see AuthService.login). Successful logins clear that
+/// email's rows; rows older than a day are pruned as new ones arrive.
+/// Lives in Postgres rather than memory because serverless instances
+/// don't share memory, so an in-process counter would never add up.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
+  @@map("login_attempts")
+}

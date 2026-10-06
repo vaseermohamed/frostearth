@@ -2,13 +2,45 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { createSession, destroySession, getSession, SessionPayload } from "@/lib/session";
 
-export class AuthService {
-  async login(email: string, password: string): Promise<SessionPayload> {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error("Invalid email or password");
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILURES_PER_EMAIL = 5;
+const MAX_FAILURES_PER_IP = 20;
+const LOGIN_ATTEMPT_RETENTION_MS = 24 * 60 * 60 * 1000;
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) throw new Error("Invalid email or password");
+/** Thrown instead of checking the password once too many attempts have failed recently. */
+export class LoginRateLimitedError extends Error {
+  constructor() {
+    super("Too many failed login attempts. Please wait 15 minutes and try again.");
+    this.name = "LoginRateLimitedError";
+  }
+}
+
+export class AuthService {
+  /**
+   * Rate-limited: after MAX_FAILURES_PER_EMAIL failures for one email,
+   * or MAX_FAILURES_PER_IP from one IP, within LOGIN_WINDOW_MS, further
+   * attempts are refused before bcrypt runs. The per-IP limit is looser
+   * so a shared network (office, mobile carrier) doesn't lock everyone
+   * out; the per-email limit is what actually stops password guessing.
+   */
+  async login(email: string, password: string, ip: string): Promise<SessionPayload> {
+    const since = new Date(Date.now() - LOGIN_WINDOW_MS);
+    const [emailFailures, ipFailures] = await Promise.all([
+      prisma.loginAttempt.count({ where: { email, createdAt: { gte: since } } }),
+      prisma.loginAttempt.count({ where: { ip, createdAt: { gte: since } } }),
+    ]);
+    if (emailFailures >= MAX_FAILURES_PER_EMAIL || ipFailures >= MAX_FAILURES_PER_IP) {
+      throw new LoginRateLimitedError();
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    const valid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+    if (!user || !valid) {
+      await this.recordFailedLogin(email, ip);
+      throw new Error("Invalid email or password");
+    }
+
+    await prisma.loginAttempt.deleteMany({ where: { email } });
 
     const payload: SessionPayload = {
       userId: user.id,
@@ -18,6 +50,14 @@ export class AuthService {
     };
     await createSession(payload);
     return payload;
+  }
+
+  private async recordFailedLogin(email: string, ip: string) {
+    await prisma.loginAttempt.create({ data: { email, ip } });
+    // Pruning on write keeps the table small without a separate cron job.
+    await prisma.loginAttempt.deleteMany({
+      where: { createdAt: { lt: new Date(Date.now() - LOGIN_ATTEMPT_RETENTION_MS) } },
+    });
   }
 
   async logout(): Promise<void> {
