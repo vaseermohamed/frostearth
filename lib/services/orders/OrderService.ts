@@ -187,16 +187,27 @@ export class OrderService {
 
     if (order.status === "PAID") return order; // idempotent — both confirmation paths may call this
 
-    const updated = await prisma.order.update({
-      where: { id: order.id },
+    // The checkout callback and the webhook routinely arrive within a
+    // second of each other, so the read above can't be the guard — both
+    // requests would see PENDING and both would finalize (two token sets,
+    // two receipt emails). The status condition inside this single UPDATE
+    // is the real guard: Postgres row-locks it, so exactly one request
+    // flips the row and only that request runs finalizePaidOrder. A PAID
+    // order is never downgraded to FAILED by a late failure event.
+    const { count } = await prisma.order.updateMany({
+      where: { id: order.id, status: { not: "PAID" } },
       data: {
         status: captured ? "PAID" : "FAILED",
         razorpayPaymentId,
       },
+    });
+
+    const updated = await prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
       include: { items: true },
     });
 
-    if (updated.status === "PAID") {
+    if (count === 1 && captured) {
       await this.finalizePaidOrder(updated);
     }
 
