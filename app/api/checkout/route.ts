@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       parsed.data.productIds,
       parsed.data.buyerName,
       parsed.data.buyerEmail,
-      parsed.data.buyerPhone
+      parsed.data.buyerPhone,
     );
     return NextResponse.json({
       orderId: order.id,

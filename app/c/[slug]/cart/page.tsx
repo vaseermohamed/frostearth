@@ -47,7 +47,10 @@ export default function CartPage() {
 
       {items.length === 0 ? (
         <p className="text-slate">
-          Your cart is empty. <Link href="/" className="text-ink underline">Browse products</Link>
+          Your cart is empty.{" "}
+          <Link href="/" className="text-ink underline">
+            Browse products
+          </Link>
         </p>
       ) : (
         <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -66,11 +69,7 @@ export default function CartPage() {
                   <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-fog">
                     {item.coverImageKey ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={`/api/storage/${item.coverImageKey}`}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={`/api/storage/${item.coverImageKey}`} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <NotebookPlaceholder className="w-full h-full" />
                     )}

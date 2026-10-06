@@ -10,7 +10,7 @@ export default function CloseQuizButton({ quizId, quizTitle }: { quizId: string;
   async function handleClose() {
     if (
       !window.confirm(
-        `Close "${quizTitle}"? This stops new entries immediately. The sorted entries list becomes the final winner list — this can't be undone.`
+        `Close "${quizTitle}"? This stops new entries immediately. The sorted entries list becomes the final winner list — this can't be undone.`,
       )
     )
       return;

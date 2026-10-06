@@ -13,7 +13,9 @@ import { resendDownloadEmailSchema } from "@/lib/validation/checkout";
  * written.
  */
 export async function POST(req: NextRequest, { params }: { params: { orderId: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

@@ -15,7 +15,13 @@ export interface LiveQuizSummary {
  * this is just the homepage teaser reflecting the same state so it
  * doesn't invite a click into a dead end).
  */
-export default function QuizTeaserCard({ storeSlug, liveQuiz }: { storeSlug: string; liveQuiz: LiveQuizSummary | null }) {
+export default function QuizTeaserCard({
+  storeSlug,
+  liveQuiz,
+}: {
+  storeSlug: string;
+  liveQuiz: LiveQuizSummary | null;
+}) {
   return (
     <section className="max-w-6xl mx-auto px-4 pb-20">
       <Link

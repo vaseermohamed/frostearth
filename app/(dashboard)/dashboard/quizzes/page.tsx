@@ -31,12 +31,15 @@ export default async function QuizzesPage() {
                   <QuizStatusBadge status={q.status} />
                 </div>
                 <p className="text-sm text-slate mt-1">
-                  {q.subject} · {q._count.questions} question{q._count.questions === 1 ? "" : "s"} ·{" "}
-                  {q._count.entries} entr{q._count.entries === 1 ? "y" : "ies"}
+                  {q.subject} · {q._count.questions} question{q._count.questions === 1 ? "" : "s"} · {q._count.entries}{" "}
+                  entr{q._count.entries === 1 ? "y" : "ies"}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-sm shrink-0">
-                <Link href={`/dashboard/quizzes/${q.id}/entries`} className="text-slate hover:text-ink transition-colors">
+                <Link
+                  href={`/dashboard/quizzes/${q.id}/entries`}
+                  className="text-slate hover:text-ink transition-colors"
+                >
                   Entries
                 </Link>
                 <Link href={`/dashboard/quizzes/${q.id}/edit`} className="text-slate hover:text-ink transition-colors">

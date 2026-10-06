@@ -61,9 +61,7 @@ export function CartProvider({ storeSlug, children }: { storeSlug: string; child
   const totalInPaise = items.reduce((sum, i) => sum + i.priceInPaise, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, clear, totalInPaise }}>
-      {children}
-    </CartContext.Provider>
+    <CartContext.Provider value={{ items, addItem, removeItem, clear, totalInPaise }}>{children}</CartContext.Provider>
   );
 }
 

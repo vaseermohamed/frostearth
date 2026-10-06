@@ -13,11 +13,7 @@ import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
  * tokens already use) — no buyer login exists in this guest-checkout
  * model, so none is required here either.
  */
-export default async function OrderConfirmationPage({
-  params,
-}: {
-  params: { slug: string; orderId: string };
-}) {
+export default async function OrderConfirmationPage({ params }: { params: { slug: string; orderId: string } }) {
   const { store } = await getProductService().listPublishedByStoreSlug(params.slug);
   if (!store) notFound();
 
@@ -156,7 +152,15 @@ function CheckIcon() {
 
 function XIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      aria-hidden="true"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -165,7 +169,15 @@ function XIcon() {
 
 function ClockIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
@@ -174,10 +186,17 @@ function ClockIcon() {
 
 function FileIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
     </svg>
   );
 }
-

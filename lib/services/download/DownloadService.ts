@@ -65,7 +65,7 @@ export class DownloadService {
     const { product, order, priceInPaiseSnapshot } = await getOrderService().getItemForAdminDownload(
       storeId,
       orderId,
-      orderItemId
+      orderItemId,
     );
     return this.generateWatermarkedDownload(product, order, priceInPaiseSnapshot);
   }
@@ -73,7 +73,7 @@ export class DownloadService {
   private async generateWatermarkedDownload(
     product: WatermarkSourceProduct,
     order: WatermarkSourceOrder,
-    priceInPaiseSnapshot: number
+    priceInPaiseSnapshot: number,
   ): Promise<ResolvedDownload> {
     const original = await this.storage.read(product.fileKey);
 
@@ -95,7 +95,7 @@ export class DownloadService {
           buyerEmail: order.buyerEmail,
           buyerPhone: order.buyerPhone,
         },
-        { isFree }
+        { isFree },
       );
     } catch (err) {
       console.error(`[download] watermarking failed for order ${order.id}:`, err);

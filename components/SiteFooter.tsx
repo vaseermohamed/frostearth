@@ -12,8 +12,12 @@ export default function SiteFooter() {
       <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate">
         <p className="font-mono text-xs">© {year} FrostEarth. All rights reserved.</p>
         <div className="flex items-center gap-6">
-          <a href="mailto:hello@frostearth.in" className="hover:text-ink transition-colors">Contact us</a>
-          <Link href="/login" className="hover:text-ink transition-colors">Creator login</Link>
+          <a href="mailto:hello@frostearth.in" className="hover:text-ink transition-colors">
+            Contact us
+          </a>
+          <Link href="/login" className="hover:text-ink transition-colors">
+            Creator login
+          </Link>
         </div>
       </div>
     </footer>

@@ -14,7 +14,9 @@ const UPLOAD_URL_EXPIRY_SECONDS = 300;
  * itself is decided here, server-side, so it can never be spoofed.
  */
 export async function POST(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (!fileName || !contentType || (kind !== "file" && kind !== "cover")) {
     return NextResponse.json(
       { error: "fileName, contentType and kind ('file' | 'cover') are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   // fileName lands directly in a storage key (see sanitizeFileName below) —

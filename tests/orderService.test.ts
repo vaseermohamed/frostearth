@@ -95,7 +95,7 @@ describe("OrderService payment confirmation", () => {
       }),
       svc.confirmWebhookPayment(
         JSON.stringify({ providerOrderId: "order_1", providerPaymentId: "pay_1", status: "captured" }),
-        "sig"
+        "sig",
       ),
     ]);
     expect(state.orders.get("o1").status).toBe("PAID");
@@ -107,7 +107,7 @@ describe("OrderService payment confirmation", () => {
     state.orders.get("o1").status = "PAID";
     await new OrderService().confirmWebhookPayment(
       JSON.stringify({ providerOrderId: "order_1", providerPaymentId: "pay_2", status: "failed" }),
-      "sig"
+      "sig",
     );
     expect(state.orders.get("o1").status).toBe("PAID");
     expect(state.emails).toHaveLength(0);
@@ -124,7 +124,7 @@ describe("OrderService webhook filtering", () => {
   it("leaves the order alone for an ignored event type", async () => {
     const result = await new OrderService().confirmWebhookPayment(
       JSON.stringify({ providerOrderId: "order_1", providerPaymentId: "pay_1", status: "ignored" }),
-      "sig"
+      "sig",
     );
     expect(result).toBeNull();
     expect(state.orders.get("o1").status).toBe("PENDING");
@@ -133,7 +133,7 @@ describe("OrderService webhook filtering", () => {
   it("acknowledges events for orders this app never created", async () => {
     const result = await new OrderService().confirmWebhookPayment(
       JSON.stringify({ providerOrderId: "order_other", providerPaymentId: "pay_9", status: "captured" }),
-      "sig"
+      "sig",
     );
     expect(result).toBeNull();
   });

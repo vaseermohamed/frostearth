@@ -16,7 +16,10 @@ export default async function EditQuizPage({ params }: { params: { id: string } 
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/quizzes" className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4">
+      <Link
+        href="/dashboard/quizzes"
+        className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4"
+      >
         ← Back to quizzes
       </Link>
       <div className="flex items-center justify-between mb-6 gap-4">

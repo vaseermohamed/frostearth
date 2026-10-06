@@ -55,10 +55,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const filters = parseOrderFilters(searchParams);
   const hasFilters = Boolean(
     searchParams.fromDate ||
-      searchParams.toDate ||
-      searchParams.status ||
-      searchParams.productId ||
-      searchParams.searchQuery
+    searchParams.toDate ||
+    searchParams.status ||
+    searchParams.productId ||
+    searchParams.searchQuery,
   );
 
   const requestedPage = parseInt(searchParams.page || "1", 10);

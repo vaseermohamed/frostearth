@@ -68,7 +68,8 @@ export default function NewProductPage() {
   }
 
   const loading = stage !== "idle";
-  const buttonLabel = stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Publish product";
+  const buttonLabel =
+    stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Publish product";
 
   return (
     <div className="max-w-lg">

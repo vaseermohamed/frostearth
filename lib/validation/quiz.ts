@@ -66,13 +66,17 @@ export const quizEntrySchema = z.object({
   // recomputed server-side, see QuizService.submitEntry). Bounded to a
   // sane range so it can't be used to game the score-tiebreak with an
   // obviously fabricated value (negative, zero, or multi-day).
-  totalTimeMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000),
+  totalTimeMs: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 60 * 60 * 1000),
   answers: z
     .array(
       z.object({
         questionId: z.string().min(1),
         optionId: z.string().min(1),
-      })
+      }),
     )
     .min(1)
     // Generous ceiling, far above any real quiz — scoring dedupes anyway

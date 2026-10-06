@@ -21,9 +21,7 @@ export default async function CountdownsPage() {
       </div>
 
       {countdowns.length === 0 ? (
-        <p className="text-slate">
-          Nothing here yet — add an exam countdown to show it on the homepage carousel.
-        </p>
+        <p className="text-slate">Nothing here yet — add an exam countdown to show it on the homepage carousel.</p>
       ) : (
         <div className="bg-white rounded-2xl border border-fog divide-y divide-fog">
           {countdowns.map((c) => {
@@ -44,7 +42,10 @@ export default async function CountdownsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-4 text-sm shrink-0">
-                  <Link href={`/dashboard/countdowns/${c.id}/edit`} className="text-slate hover:text-ink transition-colors">
+                  <Link
+                    href={`/dashboard/countdowns/${c.id}/edit`}
+                    className="text-slate hover:text-ink transition-colors"
+                  >
                     Edit
                   </Link>
                   <DeleteCountdownButton countdownId={c.id} examName={c.examName} />

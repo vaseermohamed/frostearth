@@ -21,11 +21,7 @@ export interface FailedOrder {
  * to a persistent order page instead, since a refresh previously wiped
  * the buyer's only on-screen copy of their download links.
  */
-export default function CartCheckout({
-  onFailure,
-}: {
-  onFailure: (failure: FailedOrder) => void;
-}) {
+export default function CartCheckout({ onFailure }: { onFailure: (failure: FailedOrder) => void }) {
   const { items, totalInPaise, clear } = useCart();
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
@@ -130,7 +126,8 @@ export default function CartCheckout({
           router.push(`/c/${slug}/order/${created.orderId}`);
         } else {
           onFailure({
-            reason: "Payment could not be verified. If you were charged, contact support with your email and order details.",
+            reason:
+              "Payment could not be verified. If you were charged, contact support with your email and order details.",
           });
         }
       },
@@ -178,8 +175,8 @@ export default function CartCheckout({
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
         <p className="text-xs text-amber-900">
           <span aria-hidden="true">⚠</span> Notes are delivered <span className="font-semibold">ONLY via email</span> —
-          please double-check your email address before paying. We cannot resend to a different address if this one
-          is wrong.
+          please double-check your email address before paying. We cannot resend to a different address if this one is
+          wrong.
         </p>
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}

@@ -13,10 +13,7 @@ export default async function ProductsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Products</h1>
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/products/archive"
-            className="text-sm text-slate hover:text-ink transition-colors"
-          >
+          <Link href="/dashboard/products/archive" className="text-sm text-slate hover:text-ink transition-colors">
             Archive
           </Link>
           <Link
@@ -54,7 +51,11 @@ export default async function ProductsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm shrink-0">
-                <Link href={`/c/founder/${p.id}`} target="_blank" className="text-slate hover:text-ink transition-colors">
+                <Link
+                  href={`/c/founder/${p.id}`}
+                  target="_blank"
+                  className="text-slate hover:text-ink transition-colors"
+                >
                   View →
                 </Link>
                 <Link href={`/dashboard/products/${p.id}/edit`} className="text-slate hover:text-ink transition-colors">

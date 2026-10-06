@@ -66,7 +66,7 @@ export class ProductService {
     storeId: string,
     input: CreateProductInput,
     file: { key: string; fileName: string },
-    cover?: { key: string }
+    cover?: { key: string },
   ) {
     return prisma.product.create({
       data: {
@@ -88,7 +88,7 @@ export class ProductService {
     productId: string,
     input: UpdateProductInput,
     file?: { key: string; fileName: string },
-    cover?: { key: string }
+    cover?: { key: string },
   ) {
     const existing = await this.getOwned(storeId, productId); // throws if not owned by this store
 

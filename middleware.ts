@@ -51,7 +51,14 @@ const ROOT_DOMAIN = "frostearth.in";
  * actual point — maintenance mode has to stop real public actions,
  * not just hide the pages that trigger them.
  */
-const MAINTENANCE_EXEMPT_PREFIXES = ["/maintenance", "/login", "/api/auth", "/api/webhooks/razorpay", "/api/cron", "/dashboard"];
+const MAINTENANCE_EXEMPT_PREFIXES = [
+  "/maintenance",
+  "/login",
+  "/api/auth",
+  "/api/webhooks/razorpay",
+  "/api/cron",
+  "/dashboard",
+];
 
 function isMaintenanceExempt(pathname: string): boolean {
   return MAINTENANCE_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));

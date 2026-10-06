@@ -3,7 +3,9 @@ import { getAuthService } from "@/lib/services/auth/AuthService";
 import { changeCredentialsSchema } from "@/lib/validation/auth";
 
 export async function PATCH(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

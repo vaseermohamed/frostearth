@@ -14,7 +14,10 @@ export default async function EditCountdownPage({ params }: { params: { id: stri
 
   return (
     <div className="max-w-lg">
-      <Link href="/dashboard/countdowns" className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4">
+      <Link
+        href="/dashboard/countdowns"
+        className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4"
+      >
         ← Back to countdowns
       </Link>
       <h1 className="text-2xl font-semibold mb-6">Edit countdown</h1>

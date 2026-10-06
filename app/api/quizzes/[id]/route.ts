@@ -4,7 +4,9 @@ import { getQuizService } from "@/lib/services/quizzes/QuizService";
 import { updateQuizSchema } from "@/lib/validation/quiz";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   try {
@@ -16,7 +18,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

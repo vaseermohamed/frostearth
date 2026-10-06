@@ -68,7 +68,7 @@ const IN_APP_BROWSER_PATTERNS: NamedPattern[] = [
     name: "Instagram",
     pattern: /Instagram/i,
     confidence:
-      "HIGH both platforms — real UA samples confirmed for iOS (Instagram 93.x era) and Android (Instagram 309.x, 2024). Instagram uses a raw WebView with an appended literal \"Instagram\" token on both OSes.",
+      'HIGH both platforms — real UA samples confirmed for iOS (Instagram 93.x era) and Android (Instagram 309.x, 2024). Instagram uses a raw WebView with an appended literal "Instagram" token on both OSes.',
   },
   {
     name: "Facebook",
@@ -86,19 +86,19 @@ const IN_APP_BROWSER_PATTERNS: NamedPattern[] = [
     name: "Telegram",
     pattern: /Telegram/i,
     confidence:
-      "HIGH Android / CONFIRMED-ABSENT iOS. Android: real 2025 UA sample cites a literal \"Telegram-Android/11.9.0\" token (user-agents.net). iOS: Telegram's own GitHub issue tracker (TelegramMessenger/Telegram-iOS #736, filed 2022, still open with no fix as of this check) confirms the in-app browser's UA is IDENTICAL to real Safari — there is currently no way to name-detect Telegram on iOS. It will fall through to the broad \"ios\" bucket instead (which is the safe-ish default, but genuinely unverified for Telegram's specific WebView — see open items).",
+      'HIGH Android / CONFIRMED-ABSENT iOS. Android: real 2025 UA sample cites a literal "Telegram-Android/11.9.0" token (user-agents.net). iOS: Telegram\'s own GitHub issue tracker (TelegramMessenger/Telegram-iOS #736, filed 2022, still open with no fix as of this check) confirms the in-app browser\'s UA is IDENTICAL to real Safari — there is currently no way to name-detect Telegram on iOS. It will fall through to the broad "ios" bucket instead (which is the safe-ish default, but genuinely unverified for Telegram\'s specific WebView — see open items).',
   },
   {
     name: "Twitter/X",
     pattern: /Twitter/i,
     confidence:
-      "MEDIUM-HIGH iOS / UNCONFIRMED Android. Real iOS samples through 2024-2025 still show the literal \"Twitter for iPhone/12.x\" token despite the X rebrand — format hasn't changed. No independently-cited Android sample found this session; kept on the (unverified) assumption the Android app uses a parallel \"Twitter for Android\" token. Lower priority per this task — not a confirmed FrostEarth traffic source.",
+      'MEDIUM-HIGH iOS / UNCONFIRMED Android. Real iOS samples through 2024-2025 still show the literal "Twitter for iPhone/12.x" token despite the X rebrand — format hasn\'t changed. No independently-cited Android sample found this session; kept on the (unverified) assumption the Android app uses a parallel "Twitter for Android" token. Lower priority per this task — not a confirmed FrostEarth traffic source.',
   },
   {
     name: "LinkedIn",
     pattern: /LinkedInApp/i,
     confidence:
-      "MEDIUM iOS / UNCONFIRMED Android. Real iOS sample confirms a \"[LinkedInApp]/9.30.1317\" token. No independently-cited Android sample found this session. Lower priority per this task — not a confirmed FrostEarth traffic source.",
+      'MEDIUM iOS / UNCONFIRMED Android. Real iOS sample confirms a "[LinkedInApp]/9.30.1317" token. No independently-cited Android sample found this session. Lower priority per this task — not a confirmed FrostEarth traffic source.',
   },
   {
     name: "Gmail",

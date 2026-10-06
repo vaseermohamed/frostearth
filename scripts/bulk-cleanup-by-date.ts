@@ -107,7 +107,9 @@ async function main() {
   const driver = process.env.STORAGE_DRIVER || "local";
   console.log(`Cutoff: keeping orders created on/after ${before} (IST midnight) — deleting anything before it.`);
   console.log(`Mode: ${dryRun ? "DRY RUN — nothing will be deleted" : "REAL DELETION"}`);
-  console.log(`Storage driver: ${driver}${driver !== "r2" ? "  <-- NOT r2, this will act on local disk, not the real bucket" : ""}`);
+  console.log(
+    `Storage driver: ${driver}${driver !== "r2" ? "  <-- NOT r2, this will act on local disk, not the real bucket" : ""}`,
+  );
   console.log("");
 
   const storage = getStorageService();

@@ -170,9 +170,7 @@ export class QuizService {
     });
     if (existing) throw new Error("You've already entered this quiz with this email address");
 
-    const correctOptionByQuestion = new Map(
-      quiz.questions.map((q) => [q.id, q.options.find((o) => o.isCorrect)?.id])
-    );
+    const correctOptionByQuestion = new Map(quiz.questions.map((q) => [q.id, q.options.find((o) => o.isCorrect)?.id]));
     // Each question counts at most once, and only questions that belong
     // to this quiz count at all — otherwise repeating one correct answer
     // N times would score N, above the number of questions.

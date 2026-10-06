@@ -5,7 +5,9 @@ import { createNoticeSchema } from "@/lib/validation/notice";
 import { parseIstDate } from "@/lib/services/orders/orderFilters";
 
 export async function GET() {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const notices = await getNoticeService().listForStore(session.storeId);
@@ -13,7 +15,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

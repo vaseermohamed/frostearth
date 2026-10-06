@@ -54,8 +54,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const dryRun =
-    req.nextUrl.searchParams.get("dryRun") === "true" || process.env.CLEANUP_WATERMARKS_DRY_RUN === "true";
+  const dryRun = req.nextUrl.searchParams.get("dryRun") === "true" || process.env.CLEANUP_WATERMARKS_DRY_RUN === "true";
 
   const storage = getStorageService();
   const allKeys = await storage.listKeys(WATERMARK_PREFIX);
@@ -156,7 +155,7 @@ export async function GET(req: NextRequest) {
 
   console.log(
     `[cleanup-watermarks] dryRun=${dryRun} totalKeysFound=${allKeys.length} checked=${keysToProcess.length} ` +
-      `truncated=${truncated} deleted=${deleted.length} wouldDelete=${wouldDelete.length} kept=${kept.length} skipped=${skipped.length}`
+      `truncated=${truncated} deleted=${deleted.length} wouldDelete=${wouldDelete.length} kept=${kept.length} skipped=${skipped.length}`,
   );
 
   return NextResponse.json(summary);

@@ -24,7 +24,10 @@ export default async function QuizEntriesPage({ params }: { params: { id: string
 
   return (
     <div>
-      <Link href="/dashboard/quizzes" className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4">
+      <Link
+        href="/dashboard/quizzes"
+        className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4"
+      >
         ← Back to quizzes
       </Link>
       <div className="flex items-center gap-2 mb-1">
@@ -32,8 +35,8 @@ export default async function QuizEntriesPage({ params }: { params: { id: string
         <QuizStatusBadge status={quiz.status} />
       </div>
       <p className="text-sm text-slate mb-6">
-        {entries.length} entr{entries.length === 1 ? "y" : "ies"} · ranked by score, then fastest completion time —
-        this order is the winner list.
+        {entries.length} entr{entries.length === 1 ? "y" : "ies"} · ranked by score, then fastest completion time — this
+        order is the winner list.
       </p>
 
       {entries.length === 0 ? (

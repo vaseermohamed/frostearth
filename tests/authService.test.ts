@@ -15,7 +15,7 @@ vi.mock("@/lib/db/prisma", () => ({
       findUnique: vi.fn(async ({ where }: any) =>
         where.email === "creator@example.com"
           ? { id: "u1", storeId: "s1", role: "CREATOR", email: where.email, passwordHash: state.hash }
-          : null
+          : null,
       ),
     },
     loginAttempt: {
@@ -45,7 +45,7 @@ describe("AuthService.login rate limiting", () => {
       await expect(auth.login("creator@example.com", "wrong", "1.1.1.1")).rejects.toThrow(/Invalid/);
     }
     await expect(auth.login("creator@example.com", "right-password", "2.2.2.2")).rejects.toBeInstanceOf(
-      LoginRateLimitedError
+      LoginRateLimitedError,
     );
   });
 
@@ -55,7 +55,7 @@ describe("AuthService.login rate limiting", () => {
       await expect(auth.login(`user${i}@example.com`, "wrong", "3.3.3.3")).rejects.toThrow(/Invalid/);
     }
     await expect(auth.login("creator@example.com", "right-password", "3.3.3.3")).rejects.toBeInstanceOf(
-      LoginRateLimitedError
+      LoginRateLimitedError,
     );
   });
 
@@ -64,7 +64,9 @@ describe("AuthService.login rate limiting", () => {
     for (let i = 0; i < 4; i++) {
       await expect(auth.login("creator@example.com", "wrong", "1.1.1.1")).rejects.toThrow();
     }
-    await expect(auth.login("creator@example.com", "right-password", "1.1.1.1")).resolves.toMatchObject({ userId: "u1" });
+    await expect(auth.login("creator@example.com", "right-password", "1.1.1.1")).resolves.toMatchObject({
+      userId: "u1",
+    });
     expect(state.attempts).toHaveLength(0);
   });
 

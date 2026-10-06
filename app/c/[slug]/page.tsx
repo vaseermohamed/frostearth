@@ -31,8 +31,8 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
               handed me.
             </h1>
             <p className="text-slate text-base sm:text-lg max-w-md mb-8">
-              Handwritten, exam-tested prep notes — the shortcuts and margin
-              notes that actually got results, now yours to download.
+              Handwritten, exam-tested prep notes — the shortcuts and margin notes that actually got results, now yours
+              to download.
             </p>
             {products.length > 0 && (
               <a
@@ -53,11 +53,7 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
                     <div className="aspect-[3/4] rounded-xl overflow-hidden border border-fog mb-2 transition-colors group-hover:border-ink">
                       {p.coverImageKey ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`/api/storage/${p.coverImageKey}`}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={`/api/storage/${p.coverImageKey}`} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <NotebookPlaceholder className="w-full h-full" />
                       )}
@@ -114,7 +110,11 @@ export default async function StorefrontPage({ params }: { params: { slug: strin
 
       <QuizTeaserCard
         storeSlug={store.slug}
-        liveQuiz={liveQuiz ? { title: liveQuiz.title, subject: liveQuiz.subject, questionCount: liveQuiz.questions.length } : null}
+        liveQuiz={
+          liveQuiz
+            ? { title: liveQuiz.title, subject: liveQuiz.subject, questionCount: liveQuiz.questions.length }
+            : null
+        }
       />
     </div>
   );

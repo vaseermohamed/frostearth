@@ -4,7 +4,9 @@ import { getProductService } from "@/lib/services/products/ProductService";
 import { createProductSchema, productFileKeySchema } from "@/lib/validation/product";
 
 export async function GET() {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const products = await getProductService().listForStore(session.storeId);
@@ -18,7 +20,9 @@ export async function GET() {
  * metadata plus the resulting storage keys, never raw file bytes.
  */
 export async function POST(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
@@ -40,16 +44,14 @@ export async function POST(req: NextRequest) {
   }
 
   const coverPayload =
-    typeof body.coverImageKey === "string" && body.coverImageKey.length > 0
-      ? { key: body.coverImageKey }
-      : undefined;
+    typeof body.coverImageKey === "string" && body.coverImageKey.length > 0 ? { key: body.coverImageKey } : undefined;
 
   try {
     const product = await getProductService().create(
       session.storeId,
       parsed.data,
       { key: fileParsed.data.fileKey, fileName: fileParsed.data.fileName },
-      coverPayload
+      coverPayload,
     );
     return NextResponse.json({ product }, { status: 201 });
   } catch (err: any) {

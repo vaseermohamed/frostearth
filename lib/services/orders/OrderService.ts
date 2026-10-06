@@ -3,7 +3,13 @@ import { Prisma } from "@prisma/client";
 import { getPaymentService } from "@/lib/services/payment";
 import { getEmailService } from "@/lib/services/email";
 import { v4 as uuid } from "uuid";
-import { formatOrderNumber, formatIstDateTime, toIst, MONTH_ABBR, OrderSearchType } from "@/lib/services/orders/orderFilters";
+import {
+  formatOrderNumber,
+  formatIstDateTime,
+  toIst,
+  MONTH_ABBR,
+  OrderSearchType,
+} from "@/lib/services/orders/orderFilters";
 
 const DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 const DOWNLOAD_TOKEN_MAX_USES = 20;
@@ -50,12 +56,7 @@ export class OrderService {
    * flow unchanged; the free item simply contributes ₹0 to that sum,
    * which the existing reduce() already handles with no special-casing.
    */
-  async createPendingOrder(
-    productIds: string[],
-    buyerName: string,
-    buyerEmail: string,
-    buyerPhone?: string
-  ) {
+  async createPendingOrder(productIds: string[], buyerName: string, buyerEmail: string, buyerPhone?: string) {
     const uniqueIds = Array.from(new Set(productIds));
     if (uniqueIds.length === 0) throw new Error("Cart is empty");
 
@@ -127,11 +128,7 @@ export class OrderService {
     return order;
   }
 
-  verifyCheckoutSignature(params: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-  }) {
+  verifyCheckoutSignature(params: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) {
     return this.payment.verifyCheckoutSignature(params);
   }
 
@@ -160,11 +157,7 @@ export class OrderService {
       return null;
     }
 
-    return this.markPaidByRazorpayOrderId(
-      event.providerOrderId,
-      event.providerPaymentId,
-      event.status === "captured"
-    );
+    return this.markPaidByRazorpayOrderId(event.providerOrderId, event.providerPaymentId, event.status === "captured");
   }
 
   /**
@@ -189,11 +182,7 @@ export class OrderService {
     return this.markPaidByRazorpayOrderId(params.razorpayOrderId, params.razorpayPaymentId, true);
   }
 
-  private async markPaidByRazorpayOrderId(
-    razorpayOrderId: string,
-    razorpayPaymentId: string,
-    captured: boolean
-  ) {
+  private async markPaidByRazorpayOrderId(razorpayOrderId: string, razorpayPaymentId: string, captured: boolean) {
     const order = await prisma.order.findUnique({
       where: { razorpayOrderId },
       include: { items: true },
@@ -250,7 +239,13 @@ export class OrderService {
       const dt = await this.issueDownloadToken(item.id);
       tokens.push({ title: item.titleSnapshot, token: dt.token });
     }
-    const sent = await this.sendReceiptEmail(order.buyerEmail, order.buyerName, order.orderNumber, order.createdAt, tokens);
+    const sent = await this.sendReceiptEmail(
+      order.buyerEmail,
+      order.buyerName,
+      order.orderNumber,
+      order.createdAt,
+      tokens,
+    );
     await this.recordEmailDelivery(order.id, order.buyerEmail, sent, "CHECKOUT");
   }
 
@@ -264,7 +259,7 @@ export class OrderService {
     orderId: string,
     sentToEmail: string,
     sent: boolean,
-    triggeredBy: "CHECKOUT" | "ADMIN_RESEND"
+    triggeredBy: "CHECKOUT" | "ADMIN_RESEND",
   ) {
     try {
       await prisma.emailDelivery.create({
@@ -292,7 +287,7 @@ export class OrderService {
     buyerName: string,
     orderNumber: number,
     orderDate: Date,
-    tokens: { title: string; token: string }[]
+    tokens: { title: string; token: string }[],
   ): Promise<boolean> {
     const formattedOrderNumber = formatOrderNumber(orderNumber);
 
@@ -344,7 +339,7 @@ export class OrderService {
     const results: { title: string; token: string }[] = [];
     for (const item of order.items) {
       const valid = existing.find(
-        (t) => t.orderItemId === item.id && t.expiresAt > now && t.usedCount < DOWNLOAD_TOKEN_MAX_USES
+        (t) => t.orderItemId === item.id && t.expiresAt > now && t.usedCount < DOWNLOAD_TOKEN_MAX_USES,
       );
       const token = valid ?? (await this.issueDownloadToken(item.id));
       results.push({ title: item.titleSnapshot, token: token.token });
@@ -485,7 +480,7 @@ export class OrderService {
   async listForStorePaginated(
     storeId: string,
     filters: OrderListFilters,
-    pagination: { page: number; pageSize: number }
+    pagination: { page: number; pageSize: number },
   ) {
     const where = buildOrderWhere(storeId, filters);
     const skip = (pagination.page - 1) * pagination.pageSize;
@@ -774,7 +769,10 @@ function formatShortDay(istDate: Date): string {
 }
 
 function escapeHtml(str: string): string {
-  return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  return str.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
 }
 
 /**
@@ -810,7 +808,7 @@ function buildReceiptEmailHtml(params: {
                 <td style="padding:0 0 20px 0;">
                   <a href="${appUrl}/download/${t.token}" style="display:inline-block; background-color:#2E5C8A; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-decoration:none; padding:10px 22px; border-radius:24px;">Download</a>
                 </td>
-              </tr>`
+              </tr>`,
     )
     .join("");
 

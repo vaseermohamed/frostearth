@@ -11,16 +11,16 @@ below): **`.env`** and **`.env.local`**. Both already exist in this repo
 with working local-dev values — only the Razorpay keys are placeholders
 you may want to replace.
 
-| Variable | Dev value | Notes |
-|---|---|---|
-| `DATABASE_URL` | your Neon **dev** project's connection string | Already filled in with your dev-project URL. **Never** paste the production string here. |
-| `SESSION_SECRET` | a random 64-char hex string | Already filled in (freshly generated). |
-| `STORAGE_DRIVER` | `local` | Already set. Files are written to `./storage` on disk — never touches R2. |
-| `LOCAL_STORAGE_ROOT` | `./storage` | Already set. |
-| `EMAIL_PROVIDER` | `console` | Already set. Logs `[email:stub] <to> <subject>` instead of sending — see the audit below for proof this never calls a real provider. |
-| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `NEXT_PUBLIC_RAZORPAY_KEY_ID` | placeholders currently | Fine for everything except actually completing a checkout. To test checkout end-to-end, sign up free at Razorpay, flip to **Test Mode**, and paste real `rzp_test_...` keys. Every other page (products, orders, dashboard, downloads) works without touching these. |
-| `RAZORPAY_WEBHOOK_SECRET` | placeholder | Only needed if you're tunneling (ngrok etc.) to test the webhook path specifically — see the main README's step 5. |
-| `CRON_SECRET` | already generated | Only used by the cleanup-watermarks cron route; harmless locally. |
+| Variable                                                                  | Dev value                                     | Notes                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                            | your Neon **dev** project's connection string | Already filled in with your dev-project URL. **Never** paste the production string here.                                                                                                                                                                             |
+| `SESSION_SECRET`                                                          | a random 64-char hex string                   | Already filled in (freshly generated).                                                                                                                                                                                                                               |
+| `STORAGE_DRIVER`                                                          | `local`                                       | Already set. Files are written to `./storage` on disk — never touches R2.                                                                                                                                                                                            |
+| `LOCAL_STORAGE_ROOT`                                                      | `./storage`                                   | Already set.                                                                                                                                                                                                                                                         |
+| `EMAIL_PROVIDER`                                                          | `console`                                     | Already set. Logs `[email:stub] <to> <subject>` instead of sending — see the audit below for proof this never calls a real provider.                                                                                                                                 |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `NEXT_PUBLIC_RAZORPAY_KEY_ID` | placeholders currently                        | Fine for everything except actually completing a checkout. To test checkout end-to-end, sign up free at Razorpay, flip to **Test Mode**, and paste real `rzp_test_...` keys. Every other page (products, orders, dashboard, downloads) works without touching these. |
+| `RAZORPAY_WEBHOOK_SECRET`                                                 | placeholder                                   | Only needed if you're tunneling (ngrok etc.) to test the webhook path specifically — see the main README's step 5.                                                                                                                                                   |
+| `CRON_SECRET`                                                             | already generated                             | Only used by the cleanup-watermarks cron route; harmless locally.                                                                                                                                                                                                    |
 
 ### Why two files (`.env` and `.env.local`)
 
@@ -61,6 +61,7 @@ npm run dev
 ```
 
 Then:
+
 - Storefront: http://localhost:3000/c/founder (also served at http://localhost:3000/ via the rewrite in `next.config.mjs`)
 - Creator dashboard: http://localhost:3000/login
 
@@ -98,7 +99,7 @@ inside their own switch branches, same as R2.
 **Payments — the one thing that's a real network call, by design.**
 There's no local/no-op payment provider — `getPaymentService()` always
 constructs `RazorpayPaymentService`, which calls the real Razorpay API.
-Isolation from *production* here comes entirely from using **test-mode**
+Isolation from _production_ here comes entirely from using **test-mode**
 keys (`rzp_test_...`), not from any code path — Razorpay's test/live
 split is what keeps this from moving real money, and that split lives
 in which keys you paste in, not in this codebase. With the current
@@ -110,7 +111,7 @@ enforced by code, only by which keys you use.
 
 **Found and fixed during this audit:** `.env.local.dev` (which held a
 real Neon dev connection string) was not covered by any `.gitignore`
-pattern — `.env.*.local` requires the filename to *end* in `.local`,
+pattern — `.env.*.local` requires the filename to _end_ in `.local`,
 and `.env.local.dev` ends in `.dev`, so it didn't match. It was
 untracked but stageable; a `git add -A` would have picked it up. Now
 added explicitly to `.gitignore`. `.env` and `.env.local` themselves

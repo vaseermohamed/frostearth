@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { detectDownloadEnvironment, detectInAppBrowserName, DownloadEnvironment } from "@/lib/utils/downloadEnvironment";
+import {
+  detectDownloadEnvironment,
+  detectInAppBrowserName,
+  DownloadEnvironment,
+} from "@/lib/utils/downloadEnvironment";
 
 type Stage = "loading" | "success" | "error";
 
@@ -150,8 +154,8 @@ export default function DownloadInterstitialPage() {
         <p className="text-[15px] font-medium text-ink mb-1">Open this link in your browser</p>
         <p className="text-[13px] text-slate mb-6 max-w-xs mx-auto">
           {inAppBrowserName ? `${inAppBrowserName}'s built-in browser` : "This app's built-in browser"} can&apos;t save
-          files. Tap the ••• or share icon, then choose &quot;Open in Safari,&quot; &quot;Open in Chrome,&quot; or &quot;Open in browser&quot; to
-          continue.
+          files. Tap the ••• or share icon, then choose &quot;Open in Safari,&quot; &quot;Open in Chrome,&quot; or
+          &quot;Open in browser&quot; to continue.
         </p>
       </div>
     );
@@ -259,7 +263,15 @@ export default function DownloadInterstitialPage() {
 
 function FileIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="8" y1="13" x2="16" y2="13" />
@@ -278,7 +290,15 @@ function CheckIcon() {
 
 function DownloadIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -288,7 +308,15 @@ function DownloadIcon() {
 
 function AlertIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="8" x2="12" y2="13" />
       <line x1="12" y1="16.5" x2="12.01" y2="16.5" />

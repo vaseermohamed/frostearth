@@ -2,7 +2,12 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getOrderService } from "@/lib/services/orders/OrderService";
 import { formatOrderNumber } from "@/lib/services/orders/orderFilters";
-import { resolveDashboardDateRange, getComparisonRange, percentChange, DATE_RANGE_PRESETS } from "@/lib/services/orders/dateRanges";
+import {
+  resolveDashboardDateRange,
+  getComparisonRange,
+  percentChange,
+  DATE_RANGE_PRESETS,
+} from "@/lib/services/orders/dateRanges";
 import AutoRefresh from "@/components/AutoRefresh";
 import OrdersLineChart from "@/components/dashboard/OrdersLineChart";
 
@@ -50,7 +55,11 @@ export default async function DashboardOverviewPage({ searchParams }: DashboardP
 
       {/* Metrics row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-8">
-        <MetricCard label="Revenue" value={`₹${(stats.revenueInPaise / 100).toLocaleString("en-IN")}`} delta={revenueDelta} />
+        <MetricCard
+          label="Revenue"
+          value={`₹${(stats.revenueInPaise / 100).toLocaleString("en-IN")}`}
+          delta={revenueDelta}
+        />
         <MetricCard label="Paid orders" value={stats.paidCount} delta={paidDelta} />
         <MetricCard label="Failed orders" value={stats.failedCount} delta={failedDelta} invertColor />
         <MetricCard label="Conversion rate" value={`${stats.conversionRate.toFixed(1)}%`} delta={conversionDelta} />
@@ -77,7 +86,12 @@ export default async function DashboardOverviewPage({ searchParams }: DashboardP
           ) : (
             <div className="space-y-4">
               {topProducts.map((p) => (
-                <TopProductBar key={p.productId} title={p.title} revenueInPaise={p.revenueInPaise} maxRevenueInPaise={maxProductRevenue} />
+                <TopProductBar
+                  key={p.productId}
+                  title={p.title}
+                  revenueInPaise={p.revenueInPaise}
+                  maxRevenueInPaise={maxProductRevenue}
+                />
               ))}
             </div>
           )}
@@ -175,10 +189,7 @@ function MetricCard({
       <p className="text-sm text-slate">{label}</p>
       <p className="font-mono text-2xl text-ink mt-1">{value}</p>
       {delta !== null && (
-        <p
-          className="text-xs font-mono mt-2"
-          style={{ color: isGood ? "#2E5C8A" : isBad ? FAILED_RED : "#6B6B68" }}
-        >
+        <p className="text-xs font-mono mt-2" style={{ color: isGood ? "#2E5C8A" : isBad ? FAILED_RED : "#6B6B68" }}>
           {delta > 0 ? "▲" : delta < 0 ? "▼" : "—"} {Math.abs(delta).toFixed(1)}%
         </p>
       )}
@@ -191,7 +202,9 @@ function StatusDonut({ paid, failed }: { paid: number; failed: number }) {
   const paidPct = total > 0 ? (paid / total) * 100 : 0;
   const failedPct = 100 - paidPct;
   const gradient =
-    total > 0 ? `conic-gradient(#2E5C8A 0% ${paidPct}%, ${FAILED_RED} ${paidPct}% 100%)` : "conic-gradient(#E8E8E4 0% 100%)";
+    total > 0
+      ? `conic-gradient(#2E5C8A 0% ${paidPct}%, ${FAILED_RED} ${paidPct}% 100%)`
+      : "conic-gradient(#E8E8E4 0% 100%)";
 
   return (
     <div>
@@ -260,7 +273,9 @@ function RecentOrderRow({
         <p className="text-xs text-slate truncate">{firstName}</p>
       </div>
       {order.status === "PAID" ? (
-        <span className="font-mono text-sm text-ink shrink-0">₹{(order.amountInPaise / 100).toLocaleString("en-IN")}</span>
+        <span className="font-mono text-sm text-ink shrink-0">
+          ₹{(order.amountInPaise / 100).toLocaleString("en-IN")}
+        </span>
       ) : (
         <span className="font-mono text-sm shrink-0" style={{ color: FAILED_RED }}>
           Failed

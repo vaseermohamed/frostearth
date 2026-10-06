@@ -4,7 +4,9 @@ import { getQuizService } from "@/lib/services/quizzes/QuizService";
 import { createQuizSchema } from "@/lib/validation/quiz";
 
 export async function GET() {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const quizzes = await getQuizService().listForStore(session.storeId);
@@ -12,7 +14,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

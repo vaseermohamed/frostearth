@@ -6,7 +6,7 @@ describe("attachmentContentDisposition", () => {
     "produces a header value the Headers API accepts for %s",
     (name) => {
       expect(() => new Headers({ "Content-Disposition": attachmentContentDisposition(name) })).not.toThrow();
-    }
+    },
   );
 
   it("round-trips the real name through filename*", () => {

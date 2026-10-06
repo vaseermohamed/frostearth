@@ -21,7 +21,9 @@ const CSV_HEADERS = [
  * a creator exporting "Paid, this month" gets exactly that, not everything.
  */
 export async function GET(req: NextRequest) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const { searchParams } = req.nextUrl;

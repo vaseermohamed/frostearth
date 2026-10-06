@@ -131,7 +131,7 @@ async function buildScriptFont(pdfDoc: PDFDocument, bytes: Buffer): Promise<Scri
 export async function applyWatermark(
   pdfBytes: Buffer,
   data: WatermarkData,
-  opts: { isFree: boolean } = { isFree: false }
+  opts: { isFree: boolean } = { isFree: false },
 ): Promise<Buffer> {
   // updateMetadata: false — by default pdf-lib stamps its own
   // Producer/Creator/ModDate at load time (and again on every later
@@ -216,7 +216,7 @@ function prepareRuns(fonts: FontsByScript, text: string): PreparedRun[] {
         console.warn(
           `[watermark] script coverage gap: character "${ch}" (U+${codePointHex}) in "${run.text}" was bucketed as ` +
             `"${run.script}" but has no glyph in that font. Only Latin, Tamil, and Devanagari are currently ` +
-            `embedded — if this is happening often, it's worth adding another script's font.`
+            `embedded — if this is happening often, it's worth adding another script's font.`,
         );
         throw new Error(`Unsupported character in watermark text: "${ch}" (U+${codePointHex}, script: ${run.script})`);
       }
@@ -242,7 +242,7 @@ function widthOfRuns(runs: PreparedRun[], size: number): number {
 function drawRuns(
   page: PDFPage,
   runs: PreparedRun[],
-  opts: { x: number; y: number; size: number; color: ReturnType<typeof rgb>; opacity: number; rotateDegrees?: number }
+  opts: { x: number; y: number; size: number; color: ReturnType<typeof rgb>; opacity: number; rotateDegrees?: number },
 ): number {
   const angleRad = ((opts.rotateDegrees ?? 0) * Math.PI) / 180;
   let advance = 0;
@@ -284,7 +284,14 @@ function drawTiledWatermark(page: PDFPage, runs: PreparedRun[]) {
 
   for (let y = -diag; y < diag; y += stepY) {
     for (let x = -diag; x < diag; x += stepX) {
-      drawRuns(page, runs, { x, y, size: fontSize, color: rgb(0.55, 0.55, 0.55), opacity: 0.1, rotateDegrees: angleDegrees });
+      drawRuns(page, runs, {
+        x,
+        y,
+        size: fontSize,
+        color: rgb(0.55, 0.55, 0.55),
+        opacity: 0.1,
+        rotateDegrees: angleDegrees,
+      });
     }
   }
 }
@@ -294,7 +301,13 @@ function drawFooter(page: PDFPage, runs: PreparedRun[]) {
   const { width } = page.getSize();
   const fontSize = 8;
   const textWidth = widthOfRuns(runs, fontSize);
-  drawRuns(page, runs, { x: Math.max(18, (width - textWidth) / 2), y: 16, size: fontSize, color: rgb(0.3, 0.3, 0.3), opacity: 0.9 });
+  drawRuns(page, runs, {
+    x: Math.max(18, (width - textWidth) / 2),
+    y: 16,
+    size: fontSize,
+    color: rgb(0.3, 0.3, 0.3),
+    opacity: 0.9,
+  });
 }
 
 /**
@@ -309,9 +322,9 @@ function writeInfoMetadata(pdfDoc: PDFDocument, data: WatermarkData, orderLabel:
   pdfDoc.setAuthor(data.buyerName);
   pdfDoc.setSubject(`Licensed to ${data.buyerName} <${data.buyerEmail}>${contactSuffix} — Order ${orderLabel}`);
   pdfDoc.setKeywords(
-    [`FrostEarth`, `Order ${orderLabel}`, data.buyerEmail, data.buyerPhone, data.orderId].filter(
-      (v): v is string => Boolean(v)
-    )
+    [`FrostEarth`, `Order ${orderLabel}`, data.buyerEmail, data.buyerPhone, data.orderId].filter((v): v is string =>
+      Boolean(v),
+    ),
   );
   pdfDoc.setProducer("FrostEarth");
   pdfDoc.setModificationDate(new Date());
@@ -344,9 +357,10 @@ function writeXmpMetadata(pdfDoc: PDFDocument, data: WatermarkData, orderLabel: 
 }
 
 function buildXmpXml(data: WatermarkData, orderLabel: string): string {
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const keywordParts = [`FrostEarth Order ${orderLabel}`, data.buyerEmail, data.buyerPhone, data.orderId].filter(
-    (v): v is string => Boolean(v)
+    (v): v is string => Boolean(v),
   );
 
   const lines = [

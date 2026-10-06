@@ -4,7 +4,9 @@ import { getProductService } from "@/lib/services/products/ProductService";
 import { updateProductSchema, productFileKeySchema } from "@/lib/validation/product";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   try {
@@ -22,7 +24,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
  * metadata plus the resulting storage keys land here, never raw bytes.
  */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
@@ -53,9 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const coverPayload =
-    typeof body.coverImageKey === "string" && body.coverImageKey.length > 0
-      ? { key: body.coverImageKey }
-      : undefined;
+    typeof body.coverImageKey === "string" && body.coverImageKey.length > 0 ? { key: body.coverImageKey } : undefined;
 
   try {
     const product = await getProductService().update(
@@ -63,7 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       params.id,
       parsed.data,
       filePayload,
-      coverPayload
+      coverPayload,
     );
     return NextResponse.json({ product });
   } catch {
@@ -72,7 +74,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAuthService().requireSession().catch(() => null);
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   try {

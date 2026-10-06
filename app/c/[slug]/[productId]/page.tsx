@@ -4,11 +4,7 @@ import { getProductService } from "@/lib/services/products/ProductService";
 import AddToCartButton from "@/components/AddToCartButton";
 import NotebookPlaceholder from "@/components/NotebookPlaceholder";
 
-export default async function ProductPage({
-  params,
-}: {
-  params: { slug: string; productId: string };
-}) {
+export default async function ProductPage({ params }: { params: { slug: string; productId: string } }) {
   const { store } = await getProductService().listPublishedByStoreSlug(params.slug);
   if (!store) notFound();
 
@@ -29,17 +25,15 @@ export default async function ProductPage({
       <div className="rounded-sm overflow-hidden border border-fog mb-8">
         {product.coverImageKey ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/storage/${product.coverImageKey}`}
-            alt=""
-            className="w-full max-h-96 object-cover"
-          />
+          <img src={`/api/storage/${product.coverImageKey}`} alt="" className="w-full max-h-96 object-cover" />
         ) : (
           <NotebookPlaceholder className="w-full h-72" />
         )}
       </div>
 
-      <h1 className="font-display font-black text-3xl sm:text-4xl text-ink mb-3 leading-tight break-words">{product.title}</h1>
+      <h1 className="font-display font-black text-3xl sm:text-4xl text-ink mb-3 leading-tight break-words">
+        {product.title}
+      </h1>
       <p className="text-slate whitespace-pre-wrap break-words leading-relaxed mb-8 max-w-xl">{product.description}</p>
       <p className="font-mono text-2xl text-frost mb-8">{priceLabel}</p>
       <AddToCartButton

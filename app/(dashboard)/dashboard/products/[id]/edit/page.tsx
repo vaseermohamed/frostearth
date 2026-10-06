@@ -92,11 +92,15 @@ export default function EditProductPage() {
   if (!product) return <p className="text-slate">Loading…</p>;
 
   const loading = stage !== "idle";
-  const buttonLabel = stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Save changes";
+  const buttonLabel =
+    stage === "uploading" ? "Uploading PDF…" : stage === "saving" ? "Saving product…" : "Save changes";
 
   return (
     <div className="max-w-lg">
-      <Link href="/dashboard/products" className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4">
+      <Link
+        href="/dashboard/products"
+        className="inline-flex items-center gap-1 text-sm text-slate hover:text-ink transition-colors mb-4"
+      >
         ← Back to products
       </Link>
       <h1 className="text-2xl font-semibold mb-6">Edit product</h1>
@@ -147,18 +151,17 @@ export default function EditProductPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Status</label>
-          <select
-            name="status"
-            defaultValue={product.status}
-            className="w-full rounded-md border border-fog px-3 py-2"
-          >
+          <select name="status" defaultValue={product.status} className="w-full rounded-md border border-fog px-3 py-2">
             <option value="PUBLISHED">Published</option>
             <option value="DRAFT">Draft (hidden from storefront)</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">
-            Replace PDF <span className="text-slate font-normal break-words">(current: {product.fileName} — leave blank to keep it)</span>
+            Replace PDF{" "}
+            <span className="text-slate font-normal break-words">
+              (current: {product.fileName} — leave blank to keep it)
+            </span>
           </label>
           <input name="file" type="file" accept="application/pdf" className="w-full text-sm" />
         </div>

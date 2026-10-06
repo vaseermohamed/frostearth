@@ -14,18 +14,17 @@ import { attachmentContentDisposition } from "@/lib/utils/contentDisposition";
  * Gated by the exact same session check as every other /api/products or
  * /api/orders dashboard route — unreachable without a valid creator login.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { orderId: string; orderItemId: string } }
-) {
-  const session = await getAuthService().requireSession().catch(() => null);
+export async function GET(_req: NextRequest, { params }: { params: { orderId: string; orderItemId: string } }) {
+  const session = await getAuthService()
+    .requireSession()
+    .catch(() => null);
   if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   try {
     const { buffer, fileName } = await getDownloadService().resolveAdminDownload(
       session.storeId,
       params.orderId,
-      params.orderItemId
+      params.orderItemId,
     );
     return new NextResponse(buffer, {
       headers: {

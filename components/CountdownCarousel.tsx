@@ -71,9 +71,7 @@ export default function CountdownCarousel({ items, now }: { items: CountdownItem
                 type="button"
                 aria-label={`Show ${item.examName} countdown`}
                 onClick={() => setActiveIndex(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === activeIndex ? "bg-frost" : "bg-fog/30"
-                }`}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === activeIndex ? "bg-frost" : "bg-fog/30"}`}
               />
             ))}
           </div>
