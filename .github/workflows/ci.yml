@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # Dummy values: the build only needs these to be present, it never
+      # connects to the database or Razorpay.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      SESSION_SECRET: ci-only-not-a-real-secret
+      NEXT_PUBLIC_RAZORPAY_KEY_ID: rzp_test_ci
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

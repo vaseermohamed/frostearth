@@ -8,3 +8,6 @@ storage/products/*
 storage/covers/*
 !storage/products/.gitkeep
 !storage/covers/.gitkeep
+
+# TypeScript incremental build cache
+*.tsbuildinfo
