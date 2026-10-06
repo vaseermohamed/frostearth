@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDownloadService } from "@/lib/services/download/DownloadService";
+import { attachmentContentDisposition } from "@/lib/utils/contentDisposition";
 
 /**
  * The only path a paid buyer's PDF is ever served through. Every request
@@ -19,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": attachmentContentDisposition(fileName),
       },
     });
   } catch (err: any) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthService } from "@/lib/services/auth/AuthService";
 import { getDownloadService } from "@/lib/services/download/DownloadService";
+import { attachmentContentDisposition } from "@/lib/utils/contentDisposition";
 
 /**
  * Creator-only manual retrieval of a purchased file, for handing it
@@ -29,7 +30,7 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": attachmentContentDisposition(fileName),
       },
     });
   } catch (err: any) {

@@ -45,8 +45,12 @@ export class DownloadService {
   private storage = getStorageService();
 
   async resolveDownload(token: string): Promise<ResolvedDownload> {
-    const { product, order, priceInPaiseSnapshot } = await getOrderService().redeemDownloadToken(token);
-    return this.generateWatermarkedDownload(product, order, priceInPaiseSnapshot);
+    const orders = getOrderService();
+    const { tokenId, product, order, priceInPaiseSnapshot } = await orders.redeemDownloadToken(token);
+    const download = await this.generateWatermarkedDownload(product, order, priceInPaiseSnapshot);
+    // Counted only after the file exists — see redeemDownloadToken.
+    await orders.consumeDownloadToken(tokenId);
+    return download;
   }
 
   /**

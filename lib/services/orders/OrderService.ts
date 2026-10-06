@@ -506,6 +506,11 @@ export class OrderService {
    * identity that watermarking needs — the caller (DownloadService) never
    * touches the client for any of this, only what a verified, paid order
    * record actually says. Enforces expiry + use-count + paid status.
+   *
+   * Only CHECKS the token — it does not count a use. The caller counts
+   * the use with consumeDownloadToken once the file has actually been
+   * produced, so a failed watermarking attempt never burns one of the
+   * buyer's limited downloads.
    */
   async redeemDownloadToken(token: string) {
     const record = await prisma.downloadToken.findUnique({
@@ -517,13 +522,9 @@ export class OrderService {
     if (record.expiresAt < new Date()) throw new Error("Download link expired");
     if (record.usedCount >= DOWNLOAD_TOKEN_MAX_USES) throw new Error("Download link exhausted");
 
-    await prisma.downloadToken.update({
-      where: { id: record.id },
-      data: { usedCount: { increment: 1 } },
-    });
-
     const { product, order } = record.orderItem;
     return {
+      tokenId: record.id,
       product,
       order: {
         id: order.id,
@@ -539,6 +540,21 @@ export class OrderService {
       // was actually paid for THIS order, not what the product costs now.
       priceInPaiseSnapshot: record.orderItem.priceInPaiseSnapshot,
     };
+  }
+
+  /**
+   * Counts one use of a download token. The limit and expiry are
+   * re-checked inside the same UPDATE rather than trusted from
+   * redeemDownloadToken's earlier read — two simultaneous downloads can
+   * both pass that read, but only those that still fit under the limit
+   * get through here.
+   */
+  async consumeDownloadToken(tokenId: string) {
+    const { count } = await prisma.downloadToken.updateMany({
+      where: { id: tokenId, usedCount: { lt: DOWNLOAD_TOKEN_MAX_USES }, expiresAt: { gt: new Date() } },
+      data: { usedCount: { increment: 1 } },
+    });
+    if (count === 0) throw new Error("Download link exhausted");
   }
 
   /**
