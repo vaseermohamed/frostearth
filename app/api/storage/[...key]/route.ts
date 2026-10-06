@@ -17,11 +17,32 @@ export async function GET(_req: NextRequest, { params }: { params: { key: string
     const storage = getStorageService();
     const buffer = await storage.read(key);
     return new NextResponse(buffer, {
-      headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" },
+      headers: {
+        "Content-Type": coverContentType(key),
+        "Cache-Control": "public, max-age=86400",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+}
+
+// Raster formats only. Anything else — notably SVG, which the upload
+// route's "image/*" check lets through and which can carry script — keeps
+// the old image/jpeg label, so a browser never runs it as a document.
+const COVER_TYPES: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+};
+
+function coverContentType(key: string): string {
+  const ext = key.split(".").pop()?.toLowerCase() ?? "";
+  return COVER_TYPES[ext] ?? "image/jpeg";
 }
 
 /**
